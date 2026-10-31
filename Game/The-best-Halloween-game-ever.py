@@ -40,6 +40,7 @@ level_complete = complete_font.render("LEVEL COMPLETE", False, (255, 255, 255))
 level_complete_rect = level_complete.get_rect(topleft = (50, 375))
 
 tome_content = [
+    tome_font.render("The breaker box is in the basement...someone turned it off..", False, (255, 255, 255)),
     tome_font.render("The kitchen floor is weird...", False, (255, 255, 255)),
     tome_font.render("What's in that cabinet?", False, (255, 255, 255)),
     tome_font.render("Last I checked, the fireplace was empty...could do with some heat...", False, (255, 255, 255)),
@@ -849,10 +850,6 @@ while running:
         screen.blit(tome_art, tome.topleft)
         screen.blit(dining_table_art, dining_table.topleft)
         screen.blit(stove_art, stove.topleft)
-        if lights_on == True:
-            screen.blit(light_bulb_on, light_bulb.topleft)
-        else:
-            screen.blit(light_bulb_off, light_bulb.topleft)
         for rect in chair:
             screen.blit(chair_art, rect.topleft)
         for rect in other_chair:
@@ -894,6 +891,16 @@ while running:
             else:
                 screen.blit(crate, rect.topleft)
 
+    if current_area != OUTSIDE:
+        if current_area == BASEMENT:
+            light_bulb.topleft = (375, 0)
+        else:
+            light_bulb.topleft = (375, 100)
+        if lights_on == True:
+            screen.blit(light_bulb_on, light_bulb.topleft)
+        else:
+            screen.blit(light_bulb_off, light_bulb.topleft)
+
     if ((current_area == GROUND_FLOOR or current_area == FIRST_FLOOR) and lights_on) == True or current_area == BASEMENT:
         screen.blit(elevator_art, elevator.topleft)
 
@@ -915,7 +922,7 @@ while running:
     screen.blit(current_art, (art_x, art_y))
 
     #Darkness overlay
-    if lights_on == False or current_area == BASEMENT or completed == True:
+    if lights_on == False or completed == True:
         screen.blit(darkness, (0,0))
 
     #The tome
