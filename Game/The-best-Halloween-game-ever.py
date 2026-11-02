@@ -22,31 +22,31 @@ dialogue_font = pygame.font.SysFont("Retro Pixel", 25)
 complete_font = pygame.font.SysFont("Retro Pixel", 50)
 tome_font = pygame.font.SysFont("Retro Pixel", 30)
 
-instruction_jump = instruction_font.render("W to jump", False, (255, 255, 255))
+instruction_jump = instruction_font.render("W to jump", True, (255, 255, 255))
 instruction_jump_rect = instruction_jump.get_rect(topleft = (200, 300))
-instruction_move = instruction_font.render("A/D to move left/right", False, (255, 255, 255))
+instruction_move = instruction_font.render("A/D to move left/right", True, (255, 255, 255))
 instruction_move_rect = instruction_move.get_rect(topleft = (200, 330))
-instruction_crouch = instruction_font.render("S to crouch", False, (255, 255, 255))
+instruction_crouch = instruction_font.render("S to crouch", True, (255, 255, 255))
 instruction_crouch_rect = instruction_crouch.get_rect(topleft = (200, 360))
-instruction_interact = instruction_font.render("F to interact with things", False, (255, 255, 255))
+instruction_interact = instruction_font.render("F to interact with things", True, (255, 255, 255))
 instruction_interact_rect = instruction_interact.get_rect(topleft = (200, 390))
 
-blargh_dialogue = dialogue_font.render("Want to get out of here?", False, (255, 255, 255))
-yes_dialogue = dialogue_font.render("Yeah! (1)", False, (255, 255, 255))
-no_dialogue = dialogue_font.render("No (2)", False, (255, 255, 255))
+blargh_dialogue = dialogue_font.render("Want to get out of here?", True, (255, 255, 255))
+yes_dialogue = dialogue_font.render("Yeah! (1)", True, (255, 255, 255))
+no_dialogue = dialogue_font.render("No (2)", True, (255, 255, 255))
 blargh_dialogue_rect = pygame.Rect(150, 350, 500, 150)
 
-level_complete = complete_font.render("LEVEL COMPLETE", False, (255, 255, 255))
+level_complete = complete_font.render("LEVEL COMPLETE", True, (255, 255, 255))
 level_complete_rect = level_complete.get_rect(topleft = (50, 375))
 
 tome_content = [
-    tome_font.render("The breaker box is in the basement...someone turned it off..", False, (255, 255, 255)),
-    tome_font.render("The kitchen floor is weird...", False, (255, 255, 255)),
-    tome_font.render("What's in that cabinet?", False, (255, 255, 255)),
-    tome_font.render("Last I checked, the fireplace was empty...could do with some heat...", False, (255, 255, 255)),
-    tome_font.render("There has to be a fire alarm here somewhere, right?", False, (255, 255, 255)),
-    tome_font.render("BLARGH WAS HERE...he didn't get out", False, (255, 255, 255)),
-    tome_font.render("blargh never really liked noise...", False, (255, 255, 255))
+    tome_font.render("The breaker box is in the basement...someone turned it off..", True, (255, 255, 255)),
+    tome_font.render("The kitchen floor is weird...", True, (255, 255, 255)),
+    tome_font.render("What's in that cabinet?", True, (255, 255, 255)),
+    tome_font.render("Last I checked, the fireplace was empty...could do with some heat...", True, (255, 255, 255)),
+    tome_font.render("There has to be a fire alarm here somewhere, right?", True, (255, 255, 255)),
+    tome_font.render("BLARGH WAS HERE...he didn't get out", True, (255, 255, 255)),
+    tome_font.render("blargh never really liked noise...", True, (255, 255, 255))
 ]
 tome_content_rect = pygame.Rect(25, 25, 750, 550)
 
@@ -118,6 +118,8 @@ blarghs_bed = load_art(ASSETS_DIR / "Art" / "Objects" / "Blargh bed.png")
 blargh_art = load_art(ASSETS_DIR / "Art" / "Objects" / "BLARGH.png")
 blargh_art = pygame.transform.flip(blargh_art, True, False)
 tome_art = load_art(ASSETS_DIR / "Art" / "Objects" / "The tome.png")
+ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
+other_ghost_art = pygame.transform.flip(ghost_art, True, False)
 
 #Loading player models
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
@@ -283,6 +285,15 @@ cupboards = [
     pygame.Rect(5100, 300, 100, 200),
     pygame.Rect(5100, 100, 100, 100)
 ]
+ghosts = [
+    pygame.Rect(5600, 300, 70, 90),
+    pygame.Rect(5700, 300, 70, 90),
+    pygame.Rect(900, -200, 70, 90)
+]
+other_ghosts = [
+    pygame.Rect(5800, 300, 70, 90),
+    pygame.Rect(5900, 300, 70, 90)
+]
 light_bulb = pygame.Rect(375, 100, 50, 50)
 stove = pygame.Rect(5000, 400, 100, 100)
 elevator = pygame.Rect(5500, 400, 100, 100)
@@ -334,7 +345,7 @@ beds = [
 ]
 blargh = pygame.Rect(25, -250, 150, 150)
 house = [fireplace, tome, dining_table, stove, blargh]
-house.extend(fireplace_chimney + chair + other_chair + floor + cupboards + beds)
+house.extend(fireplace_chimney + chair + other_chair + floor + cupboards + beds + ghosts + other_ghosts)
 basement = [elevator, elevator_floor, breaker_box]
 basement.extend(cobblestone_floor + basement_parkour)
 
@@ -648,6 +659,10 @@ while running:
                 coal.topleft = (2200, 400)
                 lighter.topleft = (2245, 340)
                 fire_alarm_check.topleft = (800, 0)
+                ghosts[0].topleft = (280, 300)
+                ghosts[1].topleft = (1080, 300)
+                other_ghosts[0].topleft = (520, 300)
+                other_ghosts[1].topleft = (1370, 300)
                 for k in range(len(fireplace_chimney)):
                     fireplace_chimney[k].topleft = (440, 312 - 100*k)
                 alpha_fade(darkness, darkness.get_alpha(), 240, 20)
@@ -924,6 +939,15 @@ while running:
     #Darkness overlay
     if lights_on == False or completed == True:
         screen.blit(darkness, (0,0))
+
+    #Ghosts
+    if current_area != BASEMENT:
+        if lights_on == False:
+            if darkness.get_alpha() != 0:
+                for rect in ghosts:
+                    screen.blit(ghost_art, rect.topleft)
+                for rect in other_ghosts:
+                    screen.blit(other_ghost_art, rect.topleft)
 
     #The tome
     if tome_opened == True:
