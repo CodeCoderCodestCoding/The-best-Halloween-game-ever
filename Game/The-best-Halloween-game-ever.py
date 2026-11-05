@@ -14,17 +14,26 @@ ASSETS_DIR = BASE_DIR / "Assets"
 screen_size = (800, 600)
 screen = pygame.display.set_mode(screen_size)
 clock = pygame.time.Clock()
+dt = 0
 pygame.mixer.set_num_channels(32)
 
 #Loading fonts and text objects
-pause_menu_font = pygame.font.SysFont("Retro Pixel", 60)
+menu_font = pygame.font.SysFont("Retro Pixel", 60)
+small_menu_font = pygame.font.SysFont("Retro Pixel", 40)
 instruction_font = pygame.font.SysFont("Retro Pixel", 30)
 dialogue_font = pygame.font.SysFont("Retro Pixel", 25)
 complete_font = pygame.font.SysFont("Retro Pixel", 50)
 tome_font = pygame.font.SysFont("Retro Pixel", 30)
 
-pause_menu_title = pause_menu_font.render("The best Halloween game ever", False, (255, 255, 255))
+pause_menu_title = menu_font.render("The best Halloween game ever", False, (255, 255, 255))
 pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
+settings_menu_title = menu_font.render("Settings", False, (255, 255, 255))
+settings_menu_title_rect = settings_menu_title.get_rect(topleft = (325, 100))
+
+settings = [
+    small_menu_font.render("Epilepsy Safety:", False, (255, 255, 255)),
+    small_menu_font.render("FPS:", False, (255, 255, 255))
+]
 
 instruction_jump = instruction_font.render("W to jump", False, (255, 255, 255))
 instruction_jump_rect = instruction_jump.get_rect(topleft = (200, 300))
@@ -124,9 +133,10 @@ blargh_art = pygame.transform.flip(blargh_art, True, False)
 tome_art = load_art(ASSETS_DIR / "Art" / "Objects" / "The tome.png")
 ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
 other_ghost_art = pygame.transform.flip(ghost_art, True, False)
-play_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Play button.png")
-exit_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Exit button.png")
-settings_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Settings button.png")
+play_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Play button.png")
+exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
+settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
+exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
 
 #Loading player models
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
@@ -145,6 +155,7 @@ walking_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Walking on grass.mp
 landing_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Landing on grass.mp3")
 walking_wood_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Walking on wood.mp3")
 walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Walking on stone.mp3")
+walking_channel = pygame.mixer.Channel(4)
 fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Fire alarm.mp3")
 electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
@@ -377,10 +388,11 @@ normal_hitbox_height = 100
 crouch_hitbox_height = 50
 hitbox_width = 75
 bobs_hitbox = pygame.Rect(bob.left, bob.bottom - normal_hitbox_height, hitbox_width, normal_hitbox_height)
+bob_y = float(bobs_hitbox.y)
 isCrouching = False
 on_ground = False
-jump_speed = 15
-gravity = 0.8
+jump_speed = 900
+gravity = 2880
 velocity_y = 0
 house.append(bob)
 house.append(bobs_hitbox)
@@ -388,18 +400,32 @@ house.append(bobs_hitbox)
 pause_menu = pygame.Surface((750, 550))
 pause_menu.set_alpha(223)
 pause_menu.fill((0, 0, 0))
+pause_menu_outline = pygame.Rect(25, 25, 750, 550)
 play_button = pygame.Rect(350, 250, 100, 100)
 exit_button = pygame.Rect(150, 250, 100, 100)
 settings_button = pygame.Rect(550, 250, 100, 100)
+settings_menu = pygame.Surface((750, 550))
+settings_menu.set_alpha(223)
+settings_menu.fill((0, 0, 0))
+settings_menu_outline = pygame.Rect(25, 25, 750, 550)
+settings_exit_button = pygame.Rect(700, 50, 50, 50)
+settings_checkboxes = [
+    pygame.Rect(600, 150, 50, 50)
+]
+settings_entries = [
+    pygame.Rect(550, 210, 100, 50)
+]
+new_fps = ""
 
 #Pre-main loop variables
 running = True
+fps = 60
 isRaining = False
 rain = []
 for k in range(150):
     x = random.randint(0, screen_size[0])
     y = random.randint(0, 100)
-    speed = random.randint(8, 15)
+    speed = random.randint(480, 900)
     length = random.randint(8, 18)
     rain.append([x, y, speed, length])
 clicked = False
@@ -410,11 +436,15 @@ lightning_end_time = 0
 camera_locked = False
 transitioning = False
 game_paused = False
+settings_open = False
+checked = []
+entry_active = []
+walking_paused = False
+flashing_lights = True
 balcony_falling = False
 balcony_fall_distance = 0
 balcony_fell = False
 creaking_played = False
-walking_channel = walking_grass_sfx.play()
 isStart_of_fadeSet = False
 has_bob_moved_after_transition = False
 inventory = []
@@ -428,7 +458,7 @@ current_area = OUTSIDE
 lights_on = False
 elevator_moving = False
 elevator_move_distance = 0
-elevator_speed = 3
+elevator_speed = 180
 cupboard_open = False
 coal_in_inventory = False
 lighter_in_inventory = False
@@ -440,22 +470,63 @@ completed = False
 
 #Main loop
 while running:
+
+    dt = min(clock.tick(fps) / 1000, 0.05)
+
     #If game is quit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-        #Pause menu buttons
+
+        #Menu buttons
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            cursor_pos = pygame.mouse.get_pos()
             if game_paused == True:
-                cursor_pos = pygame.mouse.get_pos()
                 if play_button.collidepoint(cursor_pos) == True:
                     game_paused = False
                 elif exit_button.collidepoint(cursor_pos) == True:
                     running = False
+                elif settings_button.collidepoint(cursor_pos) == True:
+                    settings_open = True
+
+            if settings_open == True:
+                if settings_exit_button.collidepoint(cursor_pos) == True:
+                    settings_open = False
+                for k in range(len(settings_checkboxes)):
+                    if settings_checkboxes[k].collidepoint(cursor_pos) == True:
+                        if k in checked:
+                            checked.remove(k)
+                        else:
+                            checked.append(k)
+                        if k == 0:
+                            flashing_lights = not flashing_lights
+                for k in range(len(settings_entries)):
+                    if settings_entries[k].collidepoint(cursor_pos) == True:
+                        if k in entry_active:
+                            entry_active.remove(k)
+                        else:
+                            entry_active.append(k)
         
         #Not WASD key presses
         elif event.type == pygame.KEYDOWN:
+
+            #FPS entry
+            if settings_open == True and 0 in entry_active:
+                if event.key == pygame.K_RETURN:
+                    try:
+                        int(new_fps)
+                        if 1 <= int(new_fps) <= 240:
+                            fps = int(new_fps)
+                        new_fps = ""
+                        entry_active.remove(0)
+                    except ValueError:
+                        new_fps = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    new_fps = new_fps[:-1]
+                elif event.unicode.isdigit():
+                    if len(new_fps) < 3:
+                        new_fps += event.unicode
 
             #Pause the game
             if event.key == pygame.K_ESCAPE:
@@ -512,10 +583,7 @@ while running:
                             dialogue_stage = 1
 
                 if bobs_hitbox.colliderect(tome):
-                    if tome_opened == False:
-                        tome_opened = True
-                    else:
-                        tome_opened = False
+                    tome_opened = not tome_opened
 
             if dialogue_active == True:
                 if dialogue_stage == 1:
@@ -535,12 +603,12 @@ while running:
                         if elevator_moving == False:
                             if current_area == BASEMENT:
                                 elevator_move_distance = 0
-                                elevator_speed = 3
+                                elevator_speed = 180
                                 elevator_moving = True
 
                             elif current_area == GROUND_FLOOR:
                                 elevator_move_distance = 0
-                                elevator_speed = 3
+                                elevator_speed = 180
                                 elevator_moving = True
 
             #Go down in elevator
@@ -550,12 +618,12 @@ while running:
                         if elevator_moving == False:
                             if current_area == FIRST_FLOOR:
                                 elevator_move_distance = 0
-                                elevator_speed = -3
+                                elevator_speed = -180
                                 elevator_moving = True
 
                             elif current_area == GROUND_FLOOR:
                                 elevator_move_distance = 0
-                                elevator_speed = -3
+                                elevator_speed = -180
                                 elevator_moving = True
 
     def elevator_arrived():
@@ -574,14 +642,15 @@ while running:
 
     # Moving the elevator
     if elevator_moving:
-        move_y = elevator_speed
+        move_y = elevator_speed * dt
         if elevator_speed > 0:
-            move_y = min(elevator_speed, 600 - elevator_move_distance)
+            move_y = min(elevator_speed * dt, 600 - elevator_move_distance)
         else:
-            move_y = max(elevator_speed, -600 - elevator_move_distance)
+            move_y = max(elevator_speed * dt, -600 - elevator_move_distance)
         elevator.y -= move_y
         elevator_floor.y -= move_y
         bobs_hitbox.y -= move_y
+        bob_y = float(bobs_hitbox.y)
         elevator_move_distance += move_y
         if abs(elevator_move_distance) >= 600:
             elevator_arrived()
@@ -608,12 +677,12 @@ while running:
     def alpha_fade(surface, current_alpha, target_alpha, fade_speed):
         if current_alpha < target_alpha:
             current_alpha = min(
-                current_alpha + fade_speed,
+                current_alpha + fade_speed * dt,
                 target_alpha
             )
         elif current_alpha > target_alpha:
             current_alpha = max(
-                current_alpha - fade_speed,
+                current_alpha - fade_speed * dt,
                 target_alpha
         )
         surface.set_alpha(int(current_alpha))
@@ -665,7 +734,7 @@ while running:
         if creaking_channel.get_busy() == False:
             balcony_falling = True
         if balcony_fell == True:
-            alpha_fade(darkness, darkness.get_alpha(), 255, 4)
+            alpha_fade(darkness, darkness.get_alpha(), 255, 240)
             if isStart_of_fadeSet == False:
                 start_of_fade = pygame.time.get_ticks()
                 isStart_of_fadeSet = True
@@ -697,7 +766,7 @@ while running:
                 other_ghosts[1].topleft = (1370, 300)
                 for k in range(len(fireplace_chimney)):
                     fireplace_chimney[k].topleft = (440, 312 - 100*k)
-                alpha_fade(darkness, darkness.get_alpha(), 240, 20)
+                alpha_fade(darkness, darkness.get_alpha(), 240, 1200)
                 transitioning = False
                 entrance.clear()
                 balcony.clear()
@@ -723,9 +792,9 @@ while running:
     scroll_x = 0
     if transitioning == False and game_paused == False:
         if key[pygame.K_a] == True:
-            scroll_x = 7
+            scroll_x = 420 * dt
         elif key[pygame.K_d] == True:
-            scroll_x = -7
+            scroll_x = -420 * dt
         isMoving = (key[pygame.K_a] or key[pygame.K_d]) and not transitioning and not game_paused
         if isMoving == True:
             if current_area == OUTSIDE and bobs_hitbox.bottom >= screen_size[1] - 100:
@@ -736,18 +805,23 @@ while running:
                 sound_to_play = walking_stone_sfx
             if walking_channel.get_sound() != sound_to_play:
                 walking_channel.stop()
-                walking_channel = sound_to_play.play(-1)
-            elif not walking_channel.get_busy():
-                walking_channel = sound_to_play.play(-1)
-            else:
+                walking_channel.play(sound_to_play, loops=-1)
+                walking_paused = False
+            elif walking_paused == True:
                 walking_channel.unpause()
+                walking_paused = False
+            elif not walking_channel.get_busy():
+                walking_channel.play(sound_to_play, loops=-1)
         else:
-            walking_channel.pause()
+            if walking_paused == False:
+                walking_channel.pause()
+                walking_paused = True
         if scroll_x != 0 or transitioning == True or game_paused == True:
             if camera_locked == True:
                 future_hitbox = bobs_hitbox.move(-scroll_x, 0)
                 if not any(future_hitbox.colliderect(rect) for rect in gameplay + balcony + entrance + floor + basement_parkour + [dining_table] + [house_wall_right] + [house_wall_left] + [elevator_floor]):
                     bobs_hitbox.x -= scroll_x
+                    bob_y = float(bobs_hitbox.y)
                 if bobs_hitbox.colliderect(move_left_in_house) == True:
                     for rect in house:
                         rect.move_ip(800, 0)
@@ -784,36 +858,43 @@ while running:
     #Gravity
     if game_paused == False:
         previous = bobs_hitbox.copy()
-        velocity_y += gravity
-        bobs_hitbox.y += round(velocity_y)
+        velocity_y += gravity * dt
+        bob_y += velocity_y * dt
+        bobs_hitbox.y = round(bob_y)
         on_ground = False
         for rect in gameplay + balcony + floor + basement_parkour + [dining_table] + [elevator_floor]:
             if bobs_hitbox.colliderect(rect) == False:
                 continue
             if velocity_y >= 0 and previous.bottom <= rect.top:
                 bobs_hitbox.bottom = rect.top
+                bob_y = float(bobs_hitbox.y)
                 velocity_y = 0
                 on_ground = True
             elif velocity_y < 0 and previous.top >= rect.bottom:
                 bobs_hitbox.top = rect.bottom
+                bob_y = float(bobs_hitbox.y)
                 velocity_y = 0
         for rect in passable_gameplay:
             if (velocity_y >= 0 and previous.bottom <= rect.top and bobs_hitbox.bottom >= rect.top and bobs_hitbox.right > rect.left and bobs_hitbox.left < rect.right):
                 bobs_hitbox.bottom = rect.top
+                bob_y = float(bobs_hitbox.y)
                 velocity_y = 0
                 on_ground = True
         if bobs_hitbox.bottom >= screen_size[1] - 100 and current_area != GROUND_FLOOR:
             bobs_hitbox.bottom = screen_size[1] - 100
+            bob_y = float(bobs_hitbox.y)
             velocity_y = 0
             on_ground = True
         if on_ground == True and was_on_ground == False:
+            print("LANDING:", current_area, bobs_hitbox.bottom, velocity_y)
             landing_sfx.play()
         bob.midbottom = bobs_hitbox.midbottom
+        bob_y = float(bobs_hitbox.y)
 
     #Falling baclony logic
     if balcony_falling == True:
-        fall_speed = 3
-        move_y = min(fall_speed, 200 - balcony_fall_distance)
+        fall_speed = 180
+        move_y = min(fall_speed * dt, 200 - balcony_fall_distance)
         for rect in balcony:
             rect.y += move_y
         balcony_fall_distance += move_y
@@ -843,7 +924,7 @@ while running:
         if transitioning == False and current_area == OUTSIDE:
             darkness.set_alpha(150)
         for drop in rain:
-            drop[1] += drop[2]
+            drop[1] += drop[2] * dt
             drop_rect = pygame.Rect(drop[0] - 3, drop[1], 4, drop[3])
             hit_block = any(
                 drop_rect.colliderect(block)
@@ -871,7 +952,7 @@ while running:
                 outside = lightning_backgrounds[lightning_strike]
                 thunder_sfx.play()
                 lightning_active = True
-                if current_area != BASEMENT:
+                if current_area != BASEMENT and flashing_lights == True:
                     darkness.set_alpha(0)
                 lightning_end_time = lightning_timer + lightning_duration
                 remainder_time = lightning_timer
@@ -893,6 +974,7 @@ while running:
     if current_area == GROUND_FLOOR:
         if has_bob_moved_after_transition == False:
             bobs_hitbox.move_ip(-600, 0)
+            bob_y = float(bobs_hitbox.y)
             has_bob_moved_after_transition = True
         screen.blit(current_fireplace_art, fireplace.topleft)
         screen.blit(tome_art, tome.topleft)
@@ -991,20 +1073,44 @@ while running:
 
     if game_paused == True:
         screen.blit(pause_menu, (25, 25))
+        pygame.draw.rect(screen, (255, 255, 255), pause_menu_outline, 3)
         screen.blit(pause_menu_title, pause_menu_title_rect)
         screen.blit(play_button_art, play_button.topleft)
         screen.blit(exit_button_art, exit_button.topleft)
         screen.blit(settings_button_art, settings_button.topleft)
 
+    if settings_open == True:
+        screen.blit(settings_menu, (25, 25))
+        pygame.draw.rect(screen, (255, 255, 255), settings_menu_outline, 3)
+        screen.blit(settings_menu_title, settings_menu_title_rect)
+        screen.blit(exit_settings_button_art, settings_exit_button)
+        for k in range(len(settings)):
+            screen.blit(settings[k], (100, 150 + 60*k))
+        for k in range(len(settings_checkboxes)):
+            if k in checked:
+                pygame.draw.rect(screen, (192, 192, 192), settings_checkboxes[k])
+                pygame.draw.rect(screen, (255, 255, 255), settings_checkboxes[k], 3)
+            else:
+                pygame.draw.rect(screen, (64, 64, 64), settings_checkboxes[k])
+                pygame.draw.rect(screen, (255, 255, 255), settings_checkboxes[k], 3)
+        for k in range(len(settings_entries)):
+            if k in entry_active:
+                pygame.draw.rect(screen, (92, 92, 92), settings_entries[k])
+                pygame.draw.rect(screen, (255, 255, 255), settings_entries[k], 3)
+            else:
+                pygame.draw.rect(screen, (64, 64, 64), settings_entries[k])
+                pygame.draw.rect(screen, (255, 255, 255), settings_entries[k], 3)
+        new_fps_text = small_menu_font.render(new_fps, False, (255, 255, 255))
+        screen.blit(new_fps_text, (settings_entries[0].x + 5, settings_entries[0].y + 5))
+
     #Escape
     if completed == True:
-        alpha_fade(darkness, darkness.get_alpha(), 255, 4)
+        alpha_fade(darkness, darkness.get_alpha(), 255, 240)
         screen.blit(level_complete, level_complete_rect)
         pygame.mixer.stop()
 
     #Refresh rate
     pygame.display.flip()
-    clock.tick(60)
 
 #Once loop is exited
 pygame.quit()
