@@ -706,7 +706,6 @@ while running:
         isCrouching = True
     else:
         standing_box = bobs_hitbox.copy()
-        standing_box = bobs_hitbox.copy()
         standing_box.height = normal_hitbox_height
         standing_box.bottom = bobs_hitbox.bottom
         blocked_above = any(
@@ -721,6 +720,7 @@ while running:
     else:
         bobs_hitbox.height = normal_hitbox_height
     bobs_hitbox.bottom = old_bottom
+    bob_y = float(bobs_hitbox.y)
 
     #Object interactions
     if bobs_hitbox.colliderect(camera_change) == True:
@@ -885,8 +885,7 @@ while running:
             bob_y = float(bobs_hitbox.y)
             velocity_y = 0
             on_ground = True
-        if on_ground == True and was_on_ground == False:
-            print("LANDING:", current_area, bobs_hitbox.bottom, velocity_y)
+        if on_ground == True and was_on_ground == False and previous.bottom < bobs_hitbox.bottom:
             landing_sfx.play()
         bob.midbottom = bobs_hitbox.midbottom
         bob_y = float(bobs_hitbox.y)
