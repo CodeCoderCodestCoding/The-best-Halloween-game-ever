@@ -2,6 +2,7 @@
 from PIL import Image
 from pathlib import Path
 import sys
+import json
 import os
 import random
 import pygame
@@ -17,6 +18,25 @@ clock = pygame.time.Clock()
 dt = 0
 pygame.mixer.set_num_channels(32)
 
+#Settings
+SETTINGS_FILE = "settings.json"
+default_settings = {
+    "Checked tickboxes": [],
+    "Epilepsy safety": False,
+    "FPS": 60
+}
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, "r") as file:
+                return {**default_settings, **json.load(file)}
+        except (json.JSONDecodeError, OSError):
+            pass
+    return default_settings.copy()
+def save_settings(settings):
+    with open(SETTINGS_FILE, "w") as file:
+        json.dump(settings, file, indent=4)
+
 #Loading fonts and text objects
 menu_font = pygame.font.SysFont("Retro Pixel", 60)
 small_menu_font = pygame.font.SysFont("Retro Pixel", 40)
@@ -30,7 +50,7 @@ pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
 settings_menu_title = menu_font.render("Settings", False, (255, 255, 255))
 settings_menu_title_rect = settings_menu_title.get_rect(topleft = (325, 100))
 
-settings = [
+settings_text = [
     small_menu_font.render("Epilepsy Safety:", False, (255, 255, 255)),
     small_menu_font.render("FPS:", False, (255, 255, 255))
 ]
@@ -419,7 +439,6 @@ new_fps = ""
 
 #Pre-main loop variables
 running = True
-fps = 60
 isRaining = False
 rain = []
 for k in range(150):
@@ -437,10 +456,8 @@ camera_locked = False
 transitioning = False
 game_paused = False
 settings_open = False
-checked = []
 entry_active = []
 walking_paused = False
-flashing_lights = True
 balcony_falling = False
 balcony_fall_distance = 0
 balcony_fell = False
@@ -468,13 +485,17 @@ dialogue_active = False
 dialogue_stage = 0
 completed = False
 
+settings = load_settings()
+
 #Main loop
 while running:
 
-    dt = min(clock.tick(fps) / 1000, 0.05)
+    #Initialisation
+    dt = min(clock.tick(settings["FPS"]) / 1000, 0.05)
 
     #If game is quit
     for event in pygame.event.get():
+        save_settings(settings)
         if event.type == pygame.QUIT:
             running = False
 
@@ -495,12 +516,13 @@ while running:
                     settings_open = False
                 for k in range(len(settings_checkboxes)):
                     if settings_checkboxes[k].collidepoint(cursor_pos) == True:
-                        if k in checked:
-                            checked.remove(k)
+                        if k in settings["Checked tickboxes"]:
+                            settings["Checked tickboxes"].remove(k)
                         else:
-                            checked.append(k)
+                            settings["Checked tickboxes"].append(k)
                         if k == 0:
-                            flashing_lights = not flashing_lights
+                            settings["Epilepsy safety"] = not settings["Epilepsy safety"]
+                        save_settings(settings)
                 for k in range(len(settings_entries)):
                     if settings_entries[k].collidepoint(cursor_pos) == True:
                         if k in entry_active:
@@ -517,7 +539,7 @@ while running:
                     try:
                         int(new_fps)
                         if 1 <= int(new_fps) <= 240:
-                            fps = int(new_fps)
+                            settings["FPS"] = int(new_fps)
                         new_fps = ""
                         entry_active.remove(0)
                     except ValueError:
@@ -527,6 +549,7 @@ while running:
                 elif event.unicode.isdigit():
                     if len(new_fps) < 3:
                         new_fps += event.unicode
+                save_settings(settings)
 
             #Pause the game
             if event.key == pygame.K_ESCAPE:
@@ -701,7 +724,7 @@ while running:
         screen.blit(basement_bg, (0,0))
 
     #Crouch logic
-    crouch_request = key[pygame.K_s] and on_ground
+    crouch_request = key[pygame.K_s] and on_ground and velocity_y == 0
     if crouch_request == True:
         isCrouching = True
     else:
@@ -951,7 +974,7 @@ while running:
                 outside = lightning_backgrounds[lightning_strike]
                 thunder_sfx.play()
                 lightning_active = True
-                if current_area != BASEMENT and flashing_lights == True:
+                if current_area != BASEMENT and settings["Epilepsy safety"] == True:
                     darkness.set_alpha(0)
                 lightning_end_time = lightning_timer + lightning_duration
                 remainder_time = lightning_timer
@@ -1083,10 +1106,10 @@ while running:
         pygame.draw.rect(screen, (255, 255, 255), settings_menu_outline, 3)
         screen.blit(settings_menu_title, settings_menu_title_rect)
         screen.blit(exit_settings_button_art, settings_exit_button)
-        for k in range(len(settings)):
-            screen.blit(settings[k], (100, 150 + 60*k))
+        for k in range(len(settings_text)):
+            screen.blit(settings_text[k], (100, 150 + 60*k))
         for k in range(len(settings_checkboxes)):
-            if k in checked:
+            if k in settings["Checked tickboxes"]:
                 pygame.draw.rect(screen, (192, 192, 192), settings_checkboxes[k])
                 pygame.draw.rect(screen, (255, 255, 255), settings_checkboxes[k], 3)
             else:
