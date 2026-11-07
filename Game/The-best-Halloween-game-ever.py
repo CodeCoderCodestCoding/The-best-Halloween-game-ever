@@ -45,7 +45,7 @@ small_menu_font = pygame.font.SysFont("Retro Pixel", 40)
 instruction_font = pygame.font.SysFont("Retro Pixel", 30)
 dialogue_font = pygame.font.SysFont("Retro Pixel", 25)
 title_font = pygame.font.SysFont("Retro Pixel", 95)
-tome_font = pygame.font.SysFont("Retro Pixel", 30)
+text_font = pygame.font.SysFont("Retro Pixel", 30)
 
 title_text_one = title_font.render("THE BEST HALLOWEEN", False, (255, 255, 255))
 title_text_one_rect = title_text_one.get_rect(topleft = (25, 50))
@@ -82,15 +82,18 @@ level_complete = title_font.render("LEVEL COMPLETE", False, (255, 255, 255))
 level_complete_rect = level_complete.get_rect(topleft = (50, 375))
 
 tome_content = [
-    tome_font.render("The breaker box is in the basement...someone turned it off..", False, (255, 255, 255)),
-    tome_font.render("The kitchen floor is weird...", False, (255, 255, 255)),
-    tome_font.render("What's in that cabinet?", False, (255, 255, 255)),
-    tome_font.render("Last I checked, the fireplace was empty...could do with some heat...", False, (255, 255, 255)),
-    tome_font.render("There has to be a fire alarm here somewhere, right?", False, (255, 255, 255)),
-    tome_font.render("BLARGH WAS HERE...he didn't get out", False, (255, 255, 255)),
-    tome_font.render("blargh never really liked noise...", False, (255, 255, 255))
+    text_font.render("The breaker box is in the basement...someone turned it off..", False, (255, 255, 255)),
+    text_font.render("The kitchen floor is weird...", False, (255, 255, 255)),
+    text_font.render("What's in that cabinet?", False, (255, 255, 255)),
+    text_font.render("Last I checked, the fireplace was empty...could do with some heat...", False, (255, 255, 255)),
+    text_font.render("There has to be a fire alarm here somewhere, right?", False, (255, 255, 255)),
+    text_font.render("BLARGH WAS HERE...he didn't get out", False, (255, 255, 255)),
+    text_font.render("blargh never really liked noise...", False, (255, 255, 255))
 ]
 tome_content_rect = pygame.Rect(25, 25, 750, 550)
+
+inventory_title = menu_font.render("Inventory", False, (255, 255, 255))
+inventory_title_rect = inventory_title.get_rect(topleft = (350, 50))
 
 #Loading background function
 def load_background(image_path, screen_size):
@@ -514,6 +517,11 @@ def level_one():
     ]
     new_fps = ""
 
+    inventory_surface = pygame.Surface((750, 550))
+    inventory_surface.set_alpha(223)
+    inventory_surface.fill((0, 0, 0))
+    inventory_rect = pygame.Rect(25, 25, 750, 550)
+
     #Pre-main loop variables
     isRaining = False
     rain = []
@@ -541,7 +549,9 @@ def level_one():
     isStart_of_fadeSet = False
     has_bob_moved_after_transition = False
     inventory = []
+    inventory_open = False
     fireplace_state = "Closed"
+    previous_fireplace_state = "Closed"
     current_fireplace_art = fireplace_closed_art
     OUTSIDE = "Outside"
     BASEMENT = "Basement"
@@ -629,6 +639,10 @@ def level_one():
                 if event.key == pygame.K_ESCAPE:
                     game_paused = True
 
+                #Inventory
+                if event.key == pygame.K_e:
+                    inventory_open = not inventory_open
+
                 #Interactions
                 elif event.key == pygame.K_f:
 
@@ -647,15 +661,28 @@ def level_one():
                         if "Lighter" in inventory and fireplace_state == "Contains Coal":
                             current_fireplace_art = fireplace_lit_art
                             fireplace_state = "Lit"
+                            previous_fireplace_state = fireplace_state
+                            inventory.remove("Lighter")
                         elif "Coal" in inventory and fireplace_state == "Open":
                             current_fireplace_art = fireplace_with_coal_art
                             fireplace_state = "Contains Coal"
+                            previous_fireplace_state = fireplace_state
+                            inventory.remove("Coal")
                         elif fireplace_state != "Closed":
                             current_fireplace_art = fireplace_closed_art
                             fireplace_state = "Closed"
                         elif fireplace_state not in ["Contains Coal", "Lit"]:
-                            current_fireplace_art = fireplace_open_art
-                            fireplace_state = "Open"
+                            if previous_fireplace_state == "Lit":
+                                current_fireplace_art = fireplace_lit_art
+                                fireplace_state = "Lit"
+                                previous_fireplace_state = fireplace_state
+                            elif previous_fireplace_state == "Contains Coal":
+                                current_fireplace_art = fireplace_with_coal_art
+                                fireplace_state = "Contains Coal"
+                                previous_fireplace_state = fireplace_state
+                            else:
+                                current_fireplace_art = fireplace_open_art
+                                fireplace_state = "Open"
 
                     #Breaker box interaction
                     if bobs_hitbox.colliderect(breaker_box) == True and lights_on == False:
@@ -1161,6 +1188,17 @@ def level_one():
                         screen.blit(ghost_art, rect.topleft)
                     for rect in other_ghosts:
                         screen.blit(other_ghost_art, rect.topleft)
+
+        #Inventory
+        if inventory_open == True:
+            screen.blit(inventory_surface, inventory_rect.topleft)
+            pygame.draw.rect(screen, (255, 255, 255), inventory_rect, 3)
+            screen.blit(inventory_title, inventory_title_rect)
+            if len(inventory) == 0:
+                screen.blit(text_font.render("Nothing in here!", False, (255, 255, 255)), (75, 75))
+            else:
+                for k in range(len(inventory)):
+                    screen.blit(text_font.render(inventory[k], False, (255, 255, 255)), (75, 75 + 50*k))
 
         #The tome
         if tome_opened == True:
