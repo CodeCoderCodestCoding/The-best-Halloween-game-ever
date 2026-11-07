@@ -223,6 +223,7 @@ other_ghost_art = pygame.transform.flip(ghost_art, True, False)
 menu_other_ghost_art = pygame.transform.flip(menu_ghost_art, True, False)
 play_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Play button.png")
 main_play_button_art = pygame.transform.scale(play_button_art, (200, 200))
+original_play_button_art = main_play_button_art.copy()
 exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
@@ -591,7 +592,8 @@ def level_one():
                     if play_button.collidepoint(cursor_pos) == True:
                         game_paused = False
                     elif exit_button.collidepoint(cursor_pos) == True:
-                        running = False
+                        main_menu()
+                        return
                     elif settings_button.collidepoint(cursor_pos) == True:
                         settings_open = True
 
@@ -1276,7 +1278,7 @@ def level_select(events):
     screen.blit(level_one_text, level_one_rect.topleft)
 
 def main_menu():
-    global running, dt, settings, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened
+    global running, dt, settings, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened, main_play_button_art
 
     #Settings
     settings = load_settings()
@@ -1302,6 +1304,23 @@ def main_menu():
             else:
                 menu_other_ghost.move_ip(-ghost_scroll, 0)
 
+    #Pusling
+    def pulsing(surface):
+        pulse_duration = 0.5
+        pulse_amount = 0.15
+
+        pulse_timer = pygame.time.get_ticks() / 1000
+        progress = (pulse_timer % pulse_duration) / pulse_duration
+
+        scale = 1 + pulse_amount * (1 - progress)
+
+        new_size = (
+            int(surface.get_width() * scale),
+            int(surface.get_height() * scale)
+        )
+
+        return pygame.transform.scale(surface, new_size)
+        
     #Music
     pygame.mixer.music.play(-1)
 
@@ -1345,7 +1364,9 @@ def main_menu():
         screen.blit(menu_other_ghost_art, menu_other_ghost.topleft)
         ghost_move()
 
-        screen.blit(main_play_button_art, main_play_button.topleft)
+        scaled_button = pulsing(original_play_button_art)
+        scaled_rect = scaled_button.get_rect(center=main_play_button.center)
+        screen.blit(scaled_button, scaled_rect)
 
         if level_select_open == True:
             level_select(events)
