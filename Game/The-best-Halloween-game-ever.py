@@ -52,6 +52,8 @@ title_text_one_rect = title_text_one.get_rect(topleft = (25, 50))
 title_text_two = title_font.render("GAME EVER", False, (255, 255, 255))
 title_text_two_rect = title_text_two.get_rect(topleft = (200, 110))
 
+level_one_text = menu_font.render("Chapter One", False, (255, 255, 255))
+
 pause_menu_title = menu_font.render("The best Halloween game ever", False, (255, 255, 255))
 pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
 settings_menu_title = menu_font.render("Settings", False, (255, 255, 255))
@@ -213,16 +215,20 @@ blargh_art = load_art(ASSETS_DIR / "Art" / "Objects" / "BLARGH.png")
 blargh_art = pygame.transform.flip(blargh_art, True, False)
 tome_art = load_art(ASSETS_DIR / "Art" / "Objects" / "The tome.png")
 ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
+menu_ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
 other_ghost_art = pygame.transform.flip(ghost_art, True, False)
+menu_other_ghost_art = pygame.transform.flip(menu_ghost_art, True, False)
 play_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Play button.png")
 main_play_button_art = pygame.transform.scale(play_button_art, (200, 200))
 exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
 
-#Loading player models
+#Loading player models and other things that look like the player
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
 crouching_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB_crouch.png")
+spinning_bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
+spinning_bob_angle = 0
 
 #Music
 pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Main menu music.mp3")
@@ -243,7 +249,10 @@ fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.m
 electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
 
+#Pre-game variables
 running = True
+level_select_open = False
+level_menu_just_opened = False
 
 def level_one():
     global running, outside, not_pressed_button_art, breaker_box_off, settings, dt
@@ -1040,7 +1049,7 @@ def level_one():
                     outside = lightning_backgrounds[lightning_strike]
                     thunder_sfx.play()
                     lightning_active = True
-                    if current_area != BASEMENT and settings["Epilepsy safety"] == True:
+                    if current_area != BASEMENT and settings["Epilepsy safety"] == False:
                         darkness.set_alpha(0)
                     lightning_end_time = lightning_timer + lightning_duration
                     remainder_time = lightning_timer
@@ -1200,15 +1209,61 @@ def level_one():
         #Refresh rate
         pygame.display.flip()
 
+def level_select(events):
+    global level_select_open, level_menu_just_opened
+
+    level_menu = pygame.Surface((750, 550))
+    level_menu.set_alpha(223)
+    level_menu.fill((0, 0, 0))
+    level_menu_rect = pygame.Rect(25, 25, 750, 550)
+    level_one_rect = pygame.Rect(55, 55, 690, 100)
+
+    for event in events:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            cursor_pos = pygame.mouse.get_pos()
+            if level_one_rect.collidepoint(cursor_pos) == True:
+                pygame.mixer.music.stop()
+                level_one()
+                return
+            else:
+                if level_menu_just_opened == False:
+                    level_select_open = False
+                else:
+                    level_menu_just_opened = False
+    
+    screen.blit(level_menu, level_menu_rect.topleft)
+    pygame.draw.rect(screen, (255, 255, 255), level_menu_rect, 3)
+    pygame.draw.rect(screen, (64, 64, 64), level_one_rect)
+    screen.blit(level_one_text, level_one_rect.topleft)
+
 def main_menu():
-    global running, dt, settings, hue_shift
+    global running, dt, settings, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened
 
     #Settings
     settings = load_settings()
 
     #Objects
     main_play_button = pygame.Rect(300, 200, 200, 200)
+    spinning_bob = pygame.Rect(100, 250, 100, 100)
+    menu_ghost = pygame.Rect(-100, 450, 100, 100)
+    menu_other_ghost = pygame.Rect(900, 450, 100, 100)
 
+    #Ghost move
+    def ghost_move():
+        side = random.choice(["Left", "Right"])
+        ghost_scroll = 420 * dt
+        if side == "Left":
+            if menu_ghost.x > 900:
+                menu_ghost.move_ip(-1000, 0)
+            else:
+                menu_ghost.move_ip(ghost_scroll, 0)
+        else:
+            if menu_other_ghost.x < -100:
+                menu_other_ghost.move_ip(1000, 0)
+            else:
+                menu_other_ghost.move_ip(-ghost_scroll, 0)
+
+    #Music
     pygame.mixer.music.play(-1)
 
     #Main loop
@@ -1218,8 +1273,10 @@ def main_menu():
         dt_ms = clock.tick(settings["FPS"])
         dt = dt_ms / 1000
 
+        events = pygame.event.get()
+
         #Event handling
-        for event in pygame.event.get():
+        for event in events:
 
             #If game is closed
             if event.type == pygame.QUIT:
@@ -1228,18 +1285,31 @@ def main_menu():
             #If play button is pressed
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 cursor_pos = pygame.mouse.get_pos()
-                if main_play_button.collidepoint(cursor_pos):
-                    pygame.mixer.music.stop()
-                    level_one()
-                    return
+                if main_play_button.collidepoint(cursor_pos) == True and level_select_open == False:
+                    level_select_open = True
+                    level_menu_just_opened = True
 
         #Drawing artwork on screen
         hue_shift = (hue_shift + 0.2 * dt) % 1
         rainbow_background = rainbow_filter(main_menu_background, hue_shift)
         screen.blit(rainbow_background, (0, 0))
+
         screen.blit(title_text_one, title_text_one_rect)
         screen.blit(title_text_two, title_text_two_rect)
+
+        spinning_bob_angle += 360 * dt
+        rotated_bob = pygame.transform.rotate(spinning_bob_art, spinning_bob_angle)
+        rotated_bob_rect = rotated_bob.get_rect(center=spinning_bob.center)
+        screen.blit(rotated_bob, rotated_bob_rect)
+
+        screen.blit(menu_ghost_art, menu_ghost.topleft)
+        screen.blit(menu_other_ghost_art, menu_other_ghost.topleft)
+        ghost_move()
+
         screen.blit(main_play_button_art, main_play_button.topleft)
+
+        if level_select_open == True:
+            level_select(events)
 
         pygame.display.flip()
 
