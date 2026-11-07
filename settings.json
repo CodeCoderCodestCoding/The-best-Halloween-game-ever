@@ -1,7 +1,5 @@
 {
-    "Checked tickboxes": [
-        0
-    ],
-    "Epilepsy safety": true,
+    "Checked tickboxes": [],
+    "Epilepsy safety": false,
     "FPS": 60
 }

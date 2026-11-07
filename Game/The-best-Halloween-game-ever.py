@@ -255,7 +255,7 @@ level_select_open = False
 level_menu_just_opened = False
 
 def level_one():
-    global running, outside, not_pressed_button_art, breaker_box_off, settings, dt
+    global running, outside, not_pressed_button_art, breaker_box_off, settings, dt, raining_channel
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -1063,7 +1063,8 @@ def level_one():
 
         #Activate raining
         if bob.colliderect(raining_area) == True and isRaining == False:
-            raining_channel = raining_sfx.play(-1)
+            if raining_channel.get_busy() == False:
+                raining_channel.play(raining_sfx, loops=-1)
             outside = stormy_outside
             isRaining = True
 
