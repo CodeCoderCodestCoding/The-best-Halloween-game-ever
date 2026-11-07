@@ -48,7 +48,7 @@ title_font = pygame.font.SysFont("Retro Pixel", 95)
 text_font = pygame.font.SysFont("Retro Pixel", 30)
 
 title_text_one = title_font.render("THE BEST HALLOWEEN", False, (255, 255, 255))
-title_text_one_rect = title_text_one.get_rect(topleft = (25, 50))
+title_text_one_rect = title_text_one.get_rect(topleft = (18, 50))
 title_text_two = title_font.render("GAME EVER", False, (255, 255, 255))
 title_text_two_rect = title_text_two.get_rect(topleft = (200, 110))
 
@@ -72,6 +72,8 @@ instruction_crouch = instruction_font.render("S to crouch", False, (255, 255, 25
 instruction_crouch_rect = instruction_crouch.get_rect(topleft = (200, 360))
 instruction_interact = instruction_font.render("F to interact with things", False, (255, 255, 255))
 instruction_interact_rect = instruction_interact.get_rect(topleft = (200, 390))
+instruction_open_inventory = instruction_font.render("E to open inventory", False, (255, 255, 255))
+instruction_open_inventory_rect = instruction_open_inventory.get_rect(topleft = (200, 420))
 
 blargh_dialogue = dialogue_font.render("Want to get out of here?", False, (255, 255, 255))
 yes_dialogue = dialogue_font.render("Yeah! (1)", False, (255, 255, 255))
@@ -94,6 +96,11 @@ tome_content_rect = pygame.Rect(25, 25, 750, 550)
 
 inventory_title = menu_font.render("Inventory", False, (255, 255, 255))
 inventory_title_rect = inventory_title.get_rect(topleft = (350, 50))
+
+one_in_a_billion_text_one = text_font.render("If you are reading this", False, (255, 255, 255))
+one_in_a_billion_text_one_rect = one_in_a_billion_text_one.get_rect(topleft = (550, 250))
+one_in_a_billion_text_two = text_font.render("Buy some lottery tickets", False, (255, 255, 255))
+one_in_a_billion_text_two_rect = one_in_a_billion_text_two.get_rect(topleft = (550, 280))
 
 #Loading background function
 def load_background(image_path, screen_size):
@@ -973,6 +980,7 @@ def level_one():
                         instruction_move_rect.x += scroll_x
                         instruction_crouch_rect.x += scroll_x
                         instruction_interact_rect.x += scroll_x
+                        instruction_open_inventory_rect.x += scroll_x
 
         #Jump mechanic
         was_on_ground = on_ground
@@ -1033,6 +1041,7 @@ def level_one():
         screen.blit(instruction_move, instruction_move_rect)
         screen.blit(instruction_crouch, instruction_crouch_rect)
         screen.blit(instruction_interact, instruction_interact_rect)
+        screen.blit(instruction_open_inventory, instruction_open_inventory_rect)
         screen.blit(not_pressed_button_art, button.topleft)
         for rect in gameplay + entrance:
             screen.blit(crate, rect.topleft)
@@ -1367,6 +1376,11 @@ def main_menu():
         scaled_button = pulsing(original_play_button_art)
         scaled_rect = scaled_button.get_rect(center=main_play_button.center)
         screen.blit(scaled_button, scaled_rect)
+
+        chance = random.randint(1, 1000000000)
+        if chance == 1000000000:
+            screen.blit(one_in_a_billion_text_one, one_in_a_billion_text_one_rect)
+            screen.blit(one_in_a_billion_text_two, one_in_a_billion_text_two_rect)
 
         if level_select_open == True:
             level_select(events)
