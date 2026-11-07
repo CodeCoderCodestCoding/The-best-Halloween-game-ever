@@ -1,11 +1,13 @@
 #Modules required
 from PIL import Image
+import numpy as np
 from pathlib import Path
 import sys
 import json
 import os
 import random
 import pygame
+import pygame.surfarray
 
 #Initialisation
 pygame.init()
@@ -42,8 +44,13 @@ menu_font = pygame.font.SysFont("Retro Pixel", 60)
 small_menu_font = pygame.font.SysFont("Retro Pixel", 40)
 instruction_font = pygame.font.SysFont("Retro Pixel", 30)
 dialogue_font = pygame.font.SysFont("Retro Pixel", 25)
-complete_font = pygame.font.SysFont("Retro Pixel", 50)
+title_font = pygame.font.SysFont("Retro Pixel", 95)
 tome_font = pygame.font.SysFont("Retro Pixel", 30)
+
+title_text_one = title_font.render("THE BEST HALLOWEEN", False, (255, 255, 255))
+title_text_one_rect = title_text_one.get_rect(topleft = (25, 50))
+title_text_two = title_font.render("GAME EVER", False, (255, 255, 255))
+title_text_two_rect = title_text_two.get_rect(topleft = (200, 110))
 
 pause_menu_title = menu_font.render("The best Halloween game ever", False, (255, 255, 255))
 pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
@@ -69,7 +76,7 @@ yes_dialogue = dialogue_font.render("Yeah! (1)", False, (255, 255, 255))
 no_dialogue = dialogue_font.render("No (2)", False, (255, 255, 255))
 blargh_dialogue_rect = pygame.Rect(150, 350, 500, 150)
 
-level_complete = complete_font.render("LEVEL COMPLETE", False, (255, 255, 255))
+level_complete = title_font.render("LEVEL COMPLETE", False, (255, 255, 255))
 level_complete_rect = level_complete.get_rect(topleft = (50, 375))
 
 tome_content = [
@@ -96,6 +103,7 @@ def load_background(image_path, screen_size):
         sys.exit(1)
 
 #Loading backgrounds
+main_menu_background = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Main menu background.png", screen_size)
 outside = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Outside.png", screen_size)
 stormy_outside = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Stormy.png", screen_size)
 lightning1 = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Lightning1.png", screen_size)
@@ -106,6 +114,59 @@ lightning5 = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Lightning5.pn
 lightning6 = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Lightning6.png", screen_size)
 creepy_house = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Creepy House.png", screen_size)
 basement_bg = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Basement background.png", screen_size)
+
+#Hue shifter
+def rainbow_filter(surface, hue_shift):
+    pixels = pygame.surfarray.array3d(surface)
+    pixels = pixels.astype(np.float32) / 255
+    r = pixels[:, :, 0]
+    g = pixels[:, :, 1]
+    b = pixels[:, :, 2]
+    maximum = np.max(pixels, axis=2)
+    minimum = np.min(pixels, axis=2)
+    difference = maximum - minimum
+    hue = np.zeros_like(maximum)
+    mask = difference != 0
+    mask_r = mask & (maximum == r)
+    mask_g = mask & (maximum == g)
+    mask_b = mask & (maximum == b)
+    hue[mask_r] = ((g[mask_r] - b[mask_r]) / difference[mask_r]) % 6
+    hue[mask_g] = ((b[mask_g] - r[mask_g]) / difference[mask_g]) + 2
+    hue[mask_b] = ((r[mask_b] - g[mask_b]) / difference[mask_b]) + 4
+    hue /= 6
+    saturation = np.zeros_like(maximum)
+    non_black = maximum != 0
+    saturation[non_black] = difference[non_black] / maximum[non_black]
+    value = maximum
+    hue = (hue + hue_shift) % 1
+    h = hue * 6
+    c = value * saturation
+    x = c * (1 - np.abs(h % 2 - 1))
+    m = value - c
+    rgb = np.zeros((*hue.shape, 3), dtype=np.float32)
+    conditions = [
+        (h >= 0) & (h < 1),
+        (h >= 1) & (h < 2),
+        (h >= 2) & (h < 3),
+        (h >= 3) & (h < 4),
+        (h >= 4) & (h < 5),
+        (h >= 5) & (h < 6)
+    ]
+    choices = [
+        (c, x, 0),
+        (x, c, 0),
+        (0, c, x),
+        (0, x, c),
+        (x, 0, c),
+        (c, 0, x)
+    ]
+    for condition, choice in zip(conditions, choices):
+        for channel in range(3):
+            rgb[:, :, channel][condition] = choice[channel][condition] if isinstance(choice[channel], np.ndarray) else choice[channel]
+    rgb += m[:, :, None]
+    rgb = np.clip(rgb * 255, 0, 255).astype(np.uint8)
+    return pygame.surfarray.make_surface(rgb)
+hue_shift = 0
 
 #Art
 def load_art(art):
@@ -154,6 +215,7 @@ tome_art = load_art(ASSETS_DIR / "Art" / "Objects" / "The tome.png")
 ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
 other_ghost_art = pygame.transform.flip(ghost_art, True, False)
 play_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Play button.png")
+main_play_button_art = pygame.transform.scale(play_button_art, (200, 200))
 exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
@@ -162,26 +224,29 @@ exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit se
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
 crouching_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB_crouch.png")
 
-#SFX
-jump_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Jump.mp3")
-landing_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Landing.mp3")
-raining_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Raining.mp3")
+#Music
+pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Main menu music.mp3")
+jump_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Jump.mp3")
+landing_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing.mp3")
+raining_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Raining.mp3")
 raining_channel = pygame.mixer.Channel(2)
-click_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Button clicked.mp3")
-thunder_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Thunder.mp3")
-balcony_creaking_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Balcony creaking.mp3")
+click_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Button clicked.mp3")
+thunder_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Thunder.mp3")
+balcony_creaking_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Balcony creaking.mp3")
 creaking_channel = pygame.mixer.Channel(1)
-walking_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Walking on grass.mp3")
-landing_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Landing on grass.mp3")
-walking_wood_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Walking on wood.mp3")
-walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Walking on stone.mp3")
+walking_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on grass.mp3")
+landing_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing on grass.mp3")
+walking_wood_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on wood.mp3")
+walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on stone.mp3")
 walking_channel = pygame.mixer.Channel(4)
-fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Fire alarm.mp3")
-electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "SFX" / "Static.mp3")
+fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
+electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
 
+running = True
+
 def level_one():
-    global outside, not_pressed_button_art, breaker_box_off
+    global running, outside, not_pressed_button_art, breaker_box_off, settings, dt
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -441,7 +506,6 @@ def level_one():
     new_fps = ""
 
     #Pre-main loop variables
-    running = True
     isRaining = False
     rain = []
     for k in range(150):
@@ -488,24 +552,15 @@ def level_one():
     dialogue_stage = 0
     completed = False
 
-    settings = load_settings()
-
     #Main loop
     while running:
-        #Initialisation
+
+        #Timing
         dt_ms = clock.tick(settings["FPS"])
         dt = dt_ms / 1000
 
-        print(
-            f"Target: {settings['FPS']} | "
-            f"Actual: {1 / dt:.1f} FPS | "
-            f"Frame time: {dt_ms} ms | "
-            f"Average FPS: {clock.get_fps():.1f}"
-        )
-
         #If game is quit
         for event in pygame.event.get():
-            save_settings(settings)
             if event.type == pygame.QUIT:
                 running = False
 
@@ -1145,7 +1200,50 @@ def level_one():
         #Refresh rate
         pygame.display.flip()
 
-level_one()
+def main_menu():
+    global running, dt, settings, hue_shift
+
+    #Settings
+    settings = load_settings()
+
+    #Objects
+    main_play_button = pygame.Rect(300, 200, 200, 200)
+
+    pygame.mixer.music.play(-1)
+
+    #Main loop
+    while running == True:
+
+        #Initialisation
+        dt_ms = clock.tick(settings["FPS"])
+        dt = dt_ms / 1000
+
+        #Event handling
+        for event in pygame.event.get():
+
+            #If game is closed
+            if event.type == pygame.QUIT:
+                running = False
+
+            #If play button is pressed
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                cursor_pos = pygame.mouse.get_pos()
+                if main_play_button.collidepoint(cursor_pos):
+                    pygame.mixer.music.stop()
+                    level_one()
+                    return
+
+        #Drawing artwork on screen
+        hue_shift = (hue_shift + 0.2 * dt) % 1
+        rainbow_background = rainbow_filter(main_menu_background, hue_shift)
+        screen.blit(rainbow_background, (0, 0))
+        screen.blit(title_text_one, title_text_one_rect)
+        screen.blit(title_text_two, title_text_two_rect)
+        screen.blit(main_play_button_art, main_play_button.topleft)
+
+        pygame.display.flip()
+
+main_menu()
 
 #Once loop is exited
 pygame.quit()
