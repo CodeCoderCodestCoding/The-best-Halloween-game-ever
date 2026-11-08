@@ -46,6 +46,7 @@ instruction_font = pygame.font.SysFont("Retro Pixel", 30)
 dialogue_font = pygame.font.SysFont("Retro Pixel", 25)
 title_font = pygame.font.SysFont("Retro Pixel", 95)
 text_font = pygame.font.SysFont("Retro Pixel", 30)
+splash_text_font = pygame.font.SysFont("Retro Pixel", 20)
 
 title_text_one = title_font.render("THE BEST HALLOWEEN", False, (255, 255, 255))
 title_text_one_rect = title_text_one.get_rect(topleft = (18, 50))
@@ -97,10 +98,8 @@ tome_content_rect = pygame.Rect(25, 25, 750, 550)
 inventory_title = menu_font.render("Inventory", False, (255, 255, 255))
 inventory_title_rect = inventory_title.get_rect(topleft = (350, 50))
 
-one_in_a_billion_text_one = text_font.render("If you are reading this", False, (255, 255, 255))
-one_in_a_billion_text_one_rect = one_in_a_billion_text_one.get_rect(topleft = (550, 250))
-one_in_a_billion_text_two = text_font.render("Buy some lottery tickets", False, (255, 255, 255))
-one_in_a_billion_text_two_rect = one_in_a_billion_text_two.get_rect(topleft = (550, 280))
+def update_splash_text(text, colour, height):
+    return [splash_text_font.render(text, False, colour), splash_text_font.render(text, False, colour).get_rect(topleft = (550, 250 + 30*height))]
 
 #Loading background function
 def load_background(image_path, screen_size):
@@ -1298,6 +1297,10 @@ def main_menu():
     menu_ghost = pygame.Rect(-100, 450, 100, 100)
     menu_other_ghost = pygame.Rect(900, 450, 100, 100)
 
+    #Splash text
+    chance = random.randint(1, 1000000000)
+    print(chance)
+
     #Ghost move
     def ghost_move():
         side = random.choice(["Left", "Right"])
@@ -1377,10 +1380,25 @@ def main_menu():
         scaled_rect = scaled_button.get_rect(center=main_play_button.center)
         screen.blit(scaled_button, scaled_rect)
 
-        chance = random.randint(1, 1000000000)
         if chance == 1000000000:
-            screen.blit(one_in_a_billion_text_one, one_in_a_billion_text_one_rect)
-            screen.blit(one_in_a_billion_text_two, one_in_a_billion_text_two_rect)
+            screen.blit(update_splash_text("If you are reading this", (255, 255, 255), 0)[0], update_splash_text("If you are reading this", (255, 255, 255), 0)[1])
+            screen.blit(update_splash_text("You should buy some lottery tickets", (255, 255, 255), 1)[0], update_splash_text("You should buy some lottery tickets", (255, 255, 255), 1)[1])
+        elif chance >= 999999000:
+            screen.blit(update_splash_text("TheChickenIsOnFire", (255, 255, 255), 0)[0], update_splash_text("TheChickenIsOnFire", (255, 255, 255), 0)[1])
+        elif chance >= 999000000:
+            screen.blit(update_splash_text("This is the third rarest message", (255, 255, 255), 0)[0], update_splash_text("This is the third rarest message", (255, 255, 255), 0)[1])
+        elif chance >= 990000000:
+            screen.blit(update_splash_text("Top 1% of people", (255, 255, 255), 0)[0], update_splash_text("Top 1% of people", (255, 255, 255), 0)[1])
+        elif chance >= 900000000:
+            screen.blit(update_splash_text("This is NOT a Nintendo game", (255, 255, 255), 0)[0], update_splash_text("This is NOT a Nintendo game", (255, 255, 255), 0)[1])
+        elif chance >= 700000000:
+            screen.blit(update_splash_text("Say hi to BOB.", (255, 255, 255), 0)[0], update_splash_text("Say hi to BOB.", (255, 255, 255), 0)[1])
+        elif chance >= 400000000:
+            screen.blit(update_splash_text("The cake is a lie", (255, 255, 255), 0)[0], update_splash_text("The cake is a lie", (255, 255, 255), 0)[1])
+        else:
+            screen.blit(update_splash_text("This is the default message", (255, 255, 255), 0)[0], update_splash_text("This is the default message", (255, 255, 255), 0)[1])
+            screen.blit(update_splash_text("40% chance of getting this", (255, 255, 255), 1)[0], update_splash_text("40% chance of getting this", (255, 255, 255), 1)[1])
+            screen.blit(update_splash_text("Gourmet Race", (255, 255, 255), 2)[0], update_splash_text("Gourmet Race", (255, 255, 255), 2)[1])
 
         if level_select_open == True:
             level_select(events)
