@@ -31,7 +31,7 @@ pip install pygame pillow
 
 Run the Python script from your terminal:
 
-python "The best Halloween game ever.py"
+python "The-best-Halloween-game-ever.py"
 
 Controls
 Key	Action
@@ -40,14 +40,13 @@ D	Move right
 W	Jump
 S	Crouch
 F   Interact
-
-Close the game window to exit.
+E   Open inventory
 
 Or alternatively, download the .zip file, extract all the files and then run the application file.
 
 Gameplay
 
-Explore the level by jumping between platforms and navigating obstacles. Interact with the button to remove a wall and continue through the level.
+Explore the level by jumping between platforms and navigating obstacles.
 
 As you progress, the environment changes to include rain and lightning. To escape the bad weather, you enter a house, but the balcony collapses down behind you. You are trapped in this house, and you must find a way to escape.
 
@@ -55,15 +54,6 @@ Technologies Used
 Python — Main programming language.
 Pygame — Game window, input handling, collision detection, rendering, and audio playback.
 Pillow (PIL) — Loading and resizing background images.
-
-Future Improvements
-
-Potential improvements include:
-
-Improving player animations.
-Adding a main menu and pause menu.
-Introducing additional gameplay mechanics.
-Adding music and more environmental sound effects.
 
 Credits
 
