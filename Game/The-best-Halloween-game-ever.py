@@ -263,9 +263,119 @@ electricity_channel = pygame.mixer.Channel(3)
 running = True
 level_select_open = False
 level_menu_just_opened = False
+OUTSIDE = "Outside"
+BASEMENT = "Basement"
+GROUND_FLOOR = "Ground floor"
+FIRST_FLOOR = "First floor"
+current_area = OUTSIDE
+
+#BOB
+class BOB:
+    def __init__(self, x, y):
+        # Hitbox
+        self.rect = pygame.Rect(x, y, 75, 100)
+        self.normal_hitbox_height = 100
+        self.crouch_hitbox_height = 50
+
+        # Movement
+        self.velocity_y = 0
+        self.jump_speed = 900
+        self.gravity = 2880
+        self.on_ground = False
+        self.isCrouching = False
+        self.y = float(self.rect.y)
+
+        # Artwork
+        self.art = bob_art
+
+    def movement(self, dt, key, collisions, transitioning, game_paused):
+
+        if transitioning == True or game_paused == True:
+            return
+
+        # Crouching
+        crouch_request = (
+            key[pygame.K_s]
+            and self.on_ground
+            and self.velocity_y == 0
+        )
+
+        if crouch_request == True:
+            self.isCrouching = True
+        else:
+            standing_box = self.rect.copy()
+            standing_box.height = self.normal_hitbox_height
+            standing_box.bottom = self.rect.bottom
+            blocked_above = any(
+                standing_box.colliderect(rect)
+                for rect in collisions
+            )
+            if not blocked_above:
+                self.isCrouching = False
+        old_bottom = self.rect.bottom
+        if self.isCrouching:
+            self.rect.height = self.crouch_hitbox_height
+        else:
+            self.rect.height = self.normal_hitbox_height
+        self.rect.bottom = old_bottom
+        self.y = float(self.rect.y)
+
+        # Jumping
+        if key[pygame.K_w] == True and self.on_ground == True and self.isCrouching == False :
+            self.velocity_y = -self.jump_speed
+            self.on_ground = False
+            jump_sfx.play()
+
+        # Gravity
+        previous = self.rect.copy()
+        self.velocity_y += self.gravity * dt
+        self.y += self.velocity_y * dt
+        self.rect.y = round(self.y)
+        was_on_ground = self.on_ground
+        self.on_ground = False
+        for rect in collisions:
+            if self.rect.colliderect(rect) == False:
+                continue
+            if self.velocity_y >= 0 and previous.bottom <= rect.top:
+                self.rect.bottom = rect.top
+                self.y = float(self.rect.y)
+                self.velocity_y = 0
+                self.on_ground = True
+            elif self.velocity_y < 0 and previous.top >= rect.bottom:
+                self.rect.top = rect.bottom
+                self.y = float(self.rect.y)
+                self.velocity_y = 0
+
+        #Floor collision
+        print(
+            "BOTTOM:", self.rect.bottom,
+            "AREA:", current_area,
+            "GROUND CONDITION:", self.rect.bottom >= screen_size[1] - 100 and current_area != GROUND_FLOOR
+        )
+        if self.rect.bottom >= screen_size[1] - 100 and current_area == OUTSIDE:
+            self.rect.bottom = screen_size[1] - 100
+            self.y = float(self.rect.y)
+            self.velocity_y = 0
+            self.on_ground = True
+            print("GROUNDED BY:", rect)
+        print("AFTER COLLISIONS:", self.rect.bottom, self.on_ground, self.velocity_y)
+        #print(self.rect.bottom, self.velocity_y, self.on_ground)
+
+        # Landing
+        if self.on_ground == True and was_on_ground == False and previous.bottom < self.rect.bottom:
+            landing_sfx.play()
+
+    def draw(self, screen):
+        if self.isCrouching == True:
+            self.art = crouching_art
+        else:
+            self.art = bob_art
+        art_x = self.rect.centerx - self.art.get_width() // 2
+        art_y = self.rect.bottom - self.art.get_height()
+        screen.blit(self.art, (art_x, art_y))
 
 def level_one():
-    global running, outside, not_pressed_button_art, breaker_box_off, settings, dt, raining_channel
+    global running, outside, not_pressed_button_art, breaker_box_off, settings, dt, raining_channel, current_area
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -386,7 +496,7 @@ def level_one():
         pygame.Rect(2300, 0, 100, 100),
     ]
     cobblestone_floor = [
-        pygame.Rect(100 * k, 500, 100, 100)
+        pygame.Rect(100 * k, 1100, 100, 100)
         for k in range(24)
     ]
     fireplace = pygame.Rect(3600, 400, 100, 100)
@@ -490,19 +600,8 @@ def level_one():
     basement.append(basement_switch)
 
     #BOB
-    bob = pygame.Rect(300, 400, 100, 100)
-    normal_hitbox_height = 100
-    crouch_hitbox_height = 50
-    hitbox_width = 75
-    bobs_hitbox = pygame.Rect(bob.left, bob.bottom - normal_hitbox_height, hitbox_width, normal_hitbox_height)
-    bob_y = float(bobs_hitbox.y)
-    isCrouching = False
-    on_ground = False
-    jump_speed = 900
-    gravity = 2880
-    velocity_y = 0
-    house.append(bob)
-    house.append(bobs_hitbox)
+    bob = BOB(300, 400)
+    house.append(bob.rect)
 
     pause_menu = pygame.Surface((750, 550))
     pause_menu.set_alpha(223)
@@ -560,11 +659,6 @@ def level_one():
     fireplace_state = "Closed"
     previous_fireplace_state = "Closed"
     current_fireplace_art = fireplace_closed_art
-    OUTSIDE = "Outside"
-    BASEMENT = "Basement"
-    GROUND_FLOOR = "Ground floor"
-    FIRST_FLOOR = "First floor"
-    current_area = OUTSIDE
     lights_on = False
     elevator_moving = False
     elevator_move_distance = 0
@@ -655,7 +749,7 @@ def level_one():
                 elif event.key == pygame.K_f:
 
                     #Button interaction
-                    if bobs_hitbox.colliderect(button) == True and clicked == False:
+                    if bob.rect.colliderect(button) == True and clicked == False:
                         for rect in wall0:
                             if rect in gameplay:
                                 gameplay.remove(rect)
@@ -665,7 +759,7 @@ def level_one():
                         clicked = True
 
                     #Fireplace interaction
-                    if bobs_hitbox.colliderect(fireplace) == True:
+                    if bob.rect.colliderect(fireplace) == True:
                         if "Lighter" in inventory and fireplace_state == "Contains Coal":
                             current_fireplace_art = fireplace_lit_art
                             fireplace_state = "Lit"
@@ -693,14 +787,14 @@ def level_one():
                                 fireplace_state = "Open"
 
                     #Breaker box interaction
-                    if bobs_hitbox.colliderect(breaker_box) == True and lights_on == False:
+                    if bob.rect.colliderect(breaker_box) == True and lights_on == False:
                         breaker_box_off = breaker_box_on
                         electricity_channel.play(electricity_sfx, -1)
                         lights_on = True
 
                     #Open cupboard
                     for rect in cupboards:
-                        if bobs_hitbox.colliderect(rect) == True:
+                        if bob.rect.colliderect(rect) == True:
                             cupboard_open = True
                             for k in range(len(cupboards)):
                                 cupboards[k].topleft = (600, 100 + 200*k)
@@ -708,13 +802,13 @@ def level_one():
                             lighter.topleft = (650, 250)
 
                     #Talk to Blargh
-                    if bobs_hitbox.colliderect(blargh):
+                    if bob.rect.colliderect(blargh):
                         if fire_alarm_on == True:
                             if dialogue_active == False:
                                 dialogue_active = True
                                 dialogue_stage = 1
 
-                    if bobs_hitbox.colliderect(tome):
+                    if bob.rect.colliderect(tome):
                         tome_opened = not tome_opened
 
                 if dialogue_active == True:
@@ -730,7 +824,7 @@ def level_one():
 
                 #Go up in elevator
                 elif event.key == pygame.K_UP:
-                    if bobs_hitbox.colliderect(elevator):
+                    if bob.rect.colliderect(elevator):
                         if lights_on == True:
                             if elevator_moving == False:
                                 if current_area == BASEMENT:
@@ -745,7 +839,7 @@ def level_one():
 
                 #Go down in elevator
                 elif event.key == pygame.K_DOWN:
-                    if bobs_hitbox.colliderect(elevator):
+                    if bob.rect.colliderect(elevator):
                         if lights_on == True:
                             if elevator_moving == False:
                                 if current_area == FIRST_FLOOR:
@@ -759,7 +853,7 @@ def level_one():
                                     elevator_moving = True
 
         def elevator_arrived():
-            nonlocal current_area, elevator_moving
+            nonlocal elevator_moving
             elevator_moving = False
             if elevator_speed > 0:
                 if current_area == BASEMENT:
@@ -781,15 +875,15 @@ def level_one():
                 move_y = max(elevator_speed * dt, -600 - elevator_move_distance)
             elevator.y -= move_y
             elevator_floor.y -= move_y
-            bobs_hitbox.y -= move_y
-            bob_y = float(bobs_hitbox.y)
+            bob.rect.y -= move_y
+            bob_y = float(bob.rect.y)
             elevator_move_distance += move_y
             if abs(elevator_move_distance) >= 600:
                 elevator_arrived()
                 if elevator_speed > 0:
                     for rect in house:
                         rect.move_ip(0, 600)
-                        if rect == bob or rect == bobs_hitbox:
+                        if rect == bob.rect:
                             rect.move_ip(0, -100)
                     elevator.move_ip(0, 600)
                     elevator_floor.move_ip(0, 600)
@@ -823,6 +917,22 @@ def level_one():
         #Detects which key was pressed
         key = pygame.key.get_pressed()
 
+        collisions = (gameplay + passable_gameplay + balcony + floor + cobblestone_floor + basement_parkour + [dining_table, elevator_floor])
+
+        if current_area == GROUND_FLOOR:
+            print("BOB X:", bob.rect.x)
+
+            for rect in floor:
+                if bob.rect.colliderect(rect):
+                    print("FLOOR COLLISION:", rect)
+
+        if current_area == GROUND_FLOOR:
+            for rect in collisions:
+                if bob.rect.bottom == rect.top and bob.rect.colliderect(rect):
+                    print("BOB IS STANDING ON:", rect)
+
+        bob.movement(dt, key, collisions, transitioning, game_paused)
+
         #Draw background(s)
         screen.blit(outside, (0, 0))
         if isRaining == True:
@@ -832,32 +942,10 @@ def level_one():
         if current_area == BASEMENT:
             screen.blit(basement_bg, (0,0))
 
-        #Crouch logic
-        crouch_request = key[pygame.K_s] and on_ground and velocity_y == 0
-        if crouch_request == True:
-            isCrouching = True
-        else:
-            standing_box = bobs_hitbox.copy()
-            standing_box.height = normal_hitbox_height
-            standing_box.bottom = bobs_hitbox.bottom
-            blocked_above = any(
-                standing_box.colliderect(rect)
-                for rect in gameplay + basement_parkour
-            )
-            if not blocked_above:
-                isCrouching = False
-        old_bottom = bobs_hitbox.bottom
-        if isCrouching == True:
-            bobs_hitbox.height = crouch_hitbox_height
-        else:
-            bobs_hitbox.height = normal_hitbox_height
-        bobs_hitbox.bottom = old_bottom
-        bob_y = float(bobs_hitbox.y)
-
         #Object interactions
-        if bobs_hitbox.colliderect(camera_change) == True:
+        if bob.rect.colliderect(camera_change) == True:
             camera_locked = True
-        if bobs_hitbox.colliderect(transition_rect) == True:
+        if bob.rect.colliderect(transition_rect) == True:
             transitioning = True
             walking_channel.stop()
             if creaking_played == False:
@@ -898,11 +986,13 @@ def level_one():
                     other_ghosts[1].topleft = (1370, 300)
                     for k in range(len(fireplace_chimney)):
                         fireplace_chimney[k].topleft = (440, 312 - 100*k)
+                    for k in range(len(cobblestone_floor)):
+                        cobblestone_floor[k].topleft = (100*k, 500)
                     alpha_fade(darkness, darkness.get_alpha(), 240, 1200)
                     transitioning = False
                     entrance.clear()
                     balcony.clear()
-        if bobs_hitbox.colliderect(basement_switch) == True and current_area != BASEMENT:
+        if bob.rect.colliderect(basement_switch) == True and current_area != BASEMENT:
             for rect in house:
                 rect.move_ip(0, -600)
             elevator_floor.move_ip(0, 300)
@@ -910,13 +1000,13 @@ def level_one():
                 rect.move_ip(0, -600)
             breaker_box.move_ip(0, -600)
             current_area = BASEMENT
-        if bobs_hitbox.colliderect(coal) == True and coal_in_inventory == False:
+        if bob.rect.colliderect(coal) == True and coal_in_inventory == False:
             inventory.append("Coal")
             coal_in_inventory = True
-        if bobs_hitbox.colliderect(lighter) == True and lighter_in_inventory == False:
+        if bob.rect.colliderect(lighter) == True and lighter_in_inventory == False:
             inventory.append("Lighter")
             lighter_in_inventory = True
-        if bobs_hitbox.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
+        if bob.rect.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
             fire_alarm_sfx.play(-1)
             fire_alarm_on = True
 
@@ -929,9 +1019,9 @@ def level_one():
                 scroll_x = -420 * dt
             isMoving = (key[pygame.K_a] or key[pygame.K_d]) and not transitioning and not game_paused
             if isMoving == True:
-                if current_area == OUTSIDE and bobs_hitbox.bottom >= screen_size[1] - 100:
+                if current_area == OUTSIDE and bob.rect.bottom >= screen_size[1] - 100:
                     sound_to_play = walking_grass_sfx
-                elif current_area == GROUND_FLOOR or bobs_hitbox.bottom < screen_size[1] - 100:
+                elif current_area == GROUND_FLOOR or bob.rect.bottom < screen_size[1] - 100:
                     sound_to_play = walking_wood_sfx
                 else:
                     sound_to_play = walking_stone_sfx
@@ -950,16 +1040,15 @@ def level_one():
                     walking_paused = True
             if scroll_x != 0 or transitioning == True or game_paused == True:
                 if camera_locked == True:
-                    future_hitbox = bobs_hitbox.move(-scroll_x, 0)
+                    future_hitbox = bob.rect.move(-scroll_x, 0)
                     if not any(future_hitbox.colliderect(rect) for rect in gameplay + balcony + entrance + floor + basement_parkour + [dining_table] + [house_wall_right] + [house_wall_left] + [elevator_floor]):
-                        bobs_hitbox.x -= scroll_x
-                        bob_y = float(bobs_hitbox.y)
-                    if bobs_hitbox.colliderect(move_left_in_house) == True:
+                        bob.rect.x -= scroll_x
+                    if bob.rect.colliderect(move_left_in_house) == True:
                         for rect in house:
                             rect.move_ip(800, 0)
                         for rect in basement:
                             rect.move_ip(800, 0)
-                    elif bobs_hitbox.colliderect(move_right_in_house) == True:
+                    elif bob.rect.colliderect(move_right_in_house) == True:
                         for rect in house:
                             rect.move_ip(-800, 0)
                         for rect in basement:
@@ -968,7 +1057,7 @@ def level_one():
                     can_scroll = True
                     for rect in gameplay:
                         future_rect = rect.move(scroll_x, 0)
-                        if bobs_hitbox.colliderect(future_rect) == True:
+                        if bob.rect.colliderect(future_rect) == True:
                             can_scroll = False
                             break
                     if can_scroll == True:
@@ -980,48 +1069,6 @@ def level_one():
                         instruction_crouch_rect.x += scroll_x
                         instruction_interact_rect.x += scroll_x
                         instruction_open_inventory_rect.x += scroll_x
-
-        #Jump mechanic
-        was_on_ground = on_ground
-        if key[pygame.K_w] == True and on_ground == True and isCrouching == False and transitioning == False and game_paused == False:
-            velocity_y = -jump_speed
-            on_ground = False
-            jump_sfx.play()
-
-        #Gravity
-        if game_paused == False:
-            previous = bobs_hitbox.copy()
-            velocity_y += gravity * dt
-            bob_y += velocity_y * dt
-            bobs_hitbox.y = round(bob_y)
-            on_ground = False
-            for rect in gameplay + balcony + floor + basement_parkour + [dining_table] + [elevator_floor]:
-                if bobs_hitbox.colliderect(rect) == False:
-                    continue
-                if velocity_y >= 0 and previous.bottom <= rect.top:
-                    bobs_hitbox.bottom = rect.top
-                    bob_y = float(bobs_hitbox.y)
-                    velocity_y = 0
-                    on_ground = True
-                elif velocity_y < 0 and previous.top >= rect.bottom:
-                    bobs_hitbox.top = rect.bottom
-                    bob_y = float(bobs_hitbox.y)
-                    velocity_y = 0
-            for rect in passable_gameplay:
-                if (velocity_y >= 0 and previous.bottom <= rect.top and bobs_hitbox.bottom >= rect.top and bobs_hitbox.right > rect.left and bobs_hitbox.left < rect.right):
-                    bobs_hitbox.bottom = rect.top
-                    bob_y = float(bobs_hitbox.y)
-                    velocity_y = 0
-                    on_ground = True
-            if bobs_hitbox.bottom >= screen_size[1] - 100 and current_area != GROUND_FLOOR:
-                bobs_hitbox.bottom = screen_size[1] - 100
-                bob_y = float(bobs_hitbox.y)
-                velocity_y = 0
-                on_ground = True
-            if on_ground == True and was_on_ground == False and previous.bottom < bobs_hitbox.bottom:
-                landing_sfx.play()
-            bob.midbottom = bobs_hitbox.midbottom
-            bob_y = float(bobs_hitbox.y)
 
         #Falling baclony logic
         if balcony_falling == True:
@@ -1099,7 +1146,7 @@ def level_one():
                         darkness.set_alpha(240)
 
         #Activate raining
-        if bob.colliderect(raining_area) == True and isRaining == False:
+        if bob.rect.colliderect(raining_area) == True and isRaining == False:
             if raining_channel.get_busy() == False:
                 raining_channel.play(raining_sfx, loops=-1)
             outside = stormy_outside
@@ -1108,8 +1155,7 @@ def level_one():
         #Drawing house art and doing other housey things
         if current_area == GROUND_FLOOR:
             if has_bob_moved_after_transition == False:
-                bobs_hitbox.move_ip(-600, 0)
-                bob_y = float(bobs_hitbox.y)
+                bob.rect.move_ip(-600, 0)
                 has_bob_moved_after_transition = True
             screen.blit(current_fireplace_art, fireplace.topleft)
             screen.blit(tome_art, tome.topleft)
@@ -1178,17 +1224,11 @@ def level_one():
             screen.blit(no_dialogue, (450, 430))
 
         #Drawing BOB
-        if isCrouching == True:
-            current_art = crouching_art
-        else:
-            current_art = bob_art
-        art_x = bobs_hitbox.centerx - current_art.get_width() // 2
-        art_y = bobs_hitbox.bottom - current_art.get_height()
-        screen.blit(current_art, (art_x, art_y))
+        bob.draw(screen)
 
         #Darkness overlay
-        if lights_on == False or completed == True:
-            screen.blit(darkness, (0,0))
+        #if lights_on == False or completed == True:
+            #screen.blit(darkness, (0,0))
 
         #Ghosts
         if current_area != BASEMENT:
