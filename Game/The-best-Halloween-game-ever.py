@@ -347,19 +347,11 @@ class BOB:
                 self.velocity_y = 0
 
         #Floor collision
-        print(
-            "BOTTOM:", self.rect.bottom,
-            "AREA:", current_area,
-            "GROUND CONDITION:", self.rect.bottom >= screen_size[1] - 100 and current_area != GROUND_FLOOR
-        )
         if self.rect.bottom >= screen_size[1] - 100 and current_area == OUTSIDE:
             self.rect.bottom = screen_size[1] - 100
             self.y = float(self.rect.y)
             self.velocity_y = 0
             self.on_ground = True
-            print("GROUNDED BY:", rect)
-        print("AFTER COLLISIONS:", self.rect.bottom, self.on_ground, self.velocity_y)
-        #print(self.rect.bottom, self.velocity_y, self.on_ground)
 
         # Landing
         if self.on_ground == True and was_on_ground == False and previous.bottom < self.rect.bottom:
@@ -471,29 +463,29 @@ def level_one():
         pygame.Rect(2300, 500, 100, 100),
     ]
     ceiling = [
-        pygame.Rect(0, 0, 100, 100),
-        pygame.Rect(100, 0, 100, 100),
-        pygame.Rect(200, 0, 100, 100),
-        pygame.Rect(300, 0, 100, 100),
-        pygame.Rect(400, 0, 100, 100),
-        pygame.Rect(500, 0, 100, 100),
-        pygame.Rect(600, 0, 100, 100),
-        pygame.Rect(700, 0, 100, 100),
-        pygame.Rect(800, 0, 100, 100),
-        pygame.Rect(900, 0, 100, 100),
-        pygame.Rect(1000, 0, 100, 100),
-        pygame.Rect(1100, 0, 100, 100),
-        pygame.Rect(1200, 0, 100, 100),
-        pygame.Rect(1300, 0, 100, 100),
-        pygame.Rect(1400, 0, 100, 100),
-        pygame.Rect(1500, 0, 100, 100),
-        pygame.Rect(1600, 0, 100, 100),
-        pygame.Rect(1700, 0, 100, 100),
-        pygame.Rect(1800, 0, 100, 100),
-        pygame.Rect(1900, 0, 100, 100),
-        pygame.Rect(2000, 0, 100, 100),
-        pygame.Rect(2100, 0, 100, 100),
-        pygame.Rect(2300, 0, 100, 100),
+        pygame.Rect(0, -1000, 100, 100),
+        pygame.Rect(100, -1000, 100, 100),
+        pygame.Rect(200, -1000, 100, 100),
+        pygame.Rect(300, -1000, 100, 100),
+        pygame.Rect(400, -1000, 100, 100),
+        pygame.Rect(500, -1000, 100, 100),
+        pygame.Rect(600, -1000, 100, 100),
+        pygame.Rect(700, -1000, 100, 100),
+        pygame.Rect(800, -1000, 100, 100),
+        pygame.Rect(900, -1000, 100, 100),
+        pygame.Rect(1000, -1000, 100, 100),
+        pygame.Rect(1100, -1000, 100, 100),
+        pygame.Rect(1200, -1000, 100, 100),
+        pygame.Rect(1300, -1000, 100, 100),
+        pygame.Rect(1400, -1000, 100, 100),
+        pygame.Rect(1500, -1000, 100, 100),
+        pygame.Rect(1600, -1000, 100, 100),
+        pygame.Rect(1700, -1000, 100, 100),
+        pygame.Rect(1800, -1000, 100, 100),
+        pygame.Rect(1900, -1000, 100, 100),
+        pygame.Rect(2000, -1000, 100, 100),
+        pygame.Rect(2100, -1000, 100, 100),
+        pygame.Rect(2300, -1000, 100, 100),
     ]
     cobblestone_floor = [
         pygame.Rect(100 * k, 1100, 100, 100)
@@ -580,7 +572,7 @@ def level_one():
     ]
     blargh = pygame.Rect(25, -250, 150, 150)
     house = [fireplace, tome, dining_table, stove, blargh]
-    house.extend(fireplace_chimney + chair + other_chair + floor + cupboards + beds + ghosts + other_ghosts)
+    house.extend(fireplace_chimney + chair + other_chair + floor + ceiling + cupboards + beds + ghosts + other_ghosts)
     basement = [elevator, elevator_floor, breaker_box]
     basement.extend(cobblestone_floor + basement_parkour)
 
@@ -854,6 +846,7 @@ def level_one():
 
         def elevator_arrived():
             nonlocal elevator_moving
+            global current_area
             elevator_moving = False
             if elevator_speed > 0:
                 if current_area == BASEMENT:
@@ -917,19 +910,7 @@ def level_one():
         #Detects which key was pressed
         key = pygame.key.get_pressed()
 
-        collisions = (gameplay + passable_gameplay + balcony + floor + cobblestone_floor + basement_parkour + [dining_table, elevator_floor])
-
-        if current_area == GROUND_FLOOR:
-            print("BOB X:", bob.rect.x)
-
-            for rect in floor:
-                if bob.rect.colliderect(rect):
-                    print("FLOOR COLLISION:", rect)
-
-        if current_area == GROUND_FLOOR:
-            for rect in collisions:
-                if bob.rect.bottom == rect.top and bob.rect.colliderect(rect):
-                    print("BOB IS STANDING ON:", rect)
+        collisions = (gameplay + passable_gameplay + balcony + floor + ceiling + cobblestone_floor + basement_parkour + [dining_table, elevator_floor])
 
         bob.movement(dt, key, collisions, transitioning, game_paused)
 
@@ -986,14 +967,19 @@ def level_one():
                     other_ghosts[1].topleft = (1370, 300)
                     for k in range(len(fireplace_chimney)):
                         fireplace_chimney[k].topleft = (440, 312 - 100*k)
-                    for k in range(len(cobblestone_floor)):
-                        cobblestone_floor[k].topleft = (100*k, 500)
+                    for k in range(len(ceiling)):
+                        if k == 22:
+                            ceiling[k].topleft = (2300, 0)
+                        else:
+                            ceiling[k].topleft = (100*k, 0)
                     alpha_fade(darkness, darkness.get_alpha(), 240, 1200)
                     transitioning = False
                     entrance.clear()
                     balcony.clear()
         if bob.rect.colliderect(basement_switch) == True and current_area != BASEMENT:
             for rect in house:
+                rect.move_ip(0, -600)
+            for rect in cobblestone_floor:
                 rect.move_ip(0, -600)
             elevator_floor.move_ip(0, 300)
             for rect in basement_parkour:
@@ -1227,8 +1213,8 @@ def level_one():
         bob.draw(screen)
 
         #Darkness overlay
-        #if lights_on == False or completed == True:
-            #screen.blit(darkness, (0,0))
+        if lights_on == False or completed == True:
+            screen.blit(darkness, (0,0))
 
         #Ghosts
         if current_area != BASEMENT:
@@ -1339,7 +1325,6 @@ def main_menu():
 
     #Splash text
     chance = random.randint(1, 1000000000)
-    print(chance)
 
     #Ghost move
     def ghost_move():
