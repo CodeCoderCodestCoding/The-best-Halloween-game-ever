@@ -54,6 +54,7 @@ title_text_two = title_font.render("GAME EVER", False, (255, 255, 255))
 title_text_two_rect = title_text_two.get_rect(topleft = (200, 110))
 
 level_one_text = menu_font.render("Chapter One", False, (255, 255, 255))
+level_two_text = menu_font.render("Chapter Two", False, (255, 255, 255))
 
 pause_menu_title = menu_font.render("The best Halloween game ever", False, (255, 255, 255))
 pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
@@ -258,6 +259,37 @@ walking_channel = pygame.mixer.Channel(4)
 fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
 electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
+
+#Settings
+def open_pause_menu(cursor_pos, play_button, exit_button, settings_button, settings_exit_button, settings_checkboxes, settings_entries, entry_active):
+    global settings, game_paused, settings_open
+    if game_paused == True:
+        if play_button.collidepoint(cursor_pos) == True:
+            game_paused = False
+        elif exit_button.collidepoint(cursor_pos) == True:
+            main_menu()
+            return
+        elif settings_button.collidepoint(cursor_pos) == True:
+            settings_open = True
+
+    if settings_open == True:
+        if settings_exit_button.collidepoint(cursor_pos) == True:
+            settings_open = False
+        for k in range(len(settings_checkboxes)):
+            if settings_checkboxes[k].collidepoint(cursor_pos) == True:
+                if k in settings["Checked tickboxes"]:
+                    settings["Checked tickboxes"].remove(k)
+                else:
+                    settings["Checked tickboxes"].append(k)
+                if k == 0:
+                    settings["Epilepsy safety"] = not settings["Epilepsy safety"]
+                save_settings(settings)
+        for k in range(len(settings_entries)):
+            if settings_entries[k].collidepoint(cursor_pos) == True:
+                if k in entry_active:
+                    entry_active.remove(k)
+                else:
+                    entry_active.append(k)
 
 #Pre-game variables
 running = True
@@ -636,6 +668,7 @@ def level_one():
     lightning_end_time = 0
     camera_locked = False
     transitioning = False
+    global game_paused, settings_open
     game_paused = False
     settings_open = False
     entry_active = []
@@ -680,33 +713,7 @@ def level_one():
             #Menu buttons
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 cursor_pos = pygame.mouse.get_pos()
-                if game_paused == True:
-                    if play_button.collidepoint(cursor_pos) == True:
-                        game_paused = False
-                    elif exit_button.collidepoint(cursor_pos) == True:
-                        main_menu()
-                        return
-                    elif settings_button.collidepoint(cursor_pos) == True:
-                        settings_open = True
-
-                if settings_open == True:
-                    if settings_exit_button.collidepoint(cursor_pos) == True:
-                        settings_open = False
-                    for k in range(len(settings_checkboxes)):
-                        if settings_checkboxes[k].collidepoint(cursor_pos) == True:
-                            if k in settings["Checked tickboxes"]:
-                                settings["Checked tickboxes"].remove(k)
-                            else:
-                                settings["Checked tickboxes"].append(k)
-                            if k == 0:
-                                settings["Epilepsy safety"] = not settings["Epilepsy safety"]
-                            save_settings(settings)
-                    for k in range(len(settings_entries)):
-                        if settings_entries[k].collidepoint(cursor_pos) == True:
-                            if k in entry_active:
-                                entry_active.remove(k)
-                            else:
-                                entry_active.append(k)
+                open_pause_menu(cursor_pos, play_button, exit_button, settings_button, settings_exit_button, settings_checkboxes, settings_entries, entry_active)
             
             #Not WASD key presses
             elif event.type == pygame.KEYDOWN:
@@ -1284,6 +1291,32 @@ def level_one():
         #Refresh rate
         pygame.display.flip()
 
+#Level 2
+def level_two():
+    global running, dt, settings, transitioning, game_paused
+
+    while running:
+
+        dt_ms = clock.tick(settings["FPS"])
+        dt = dt_ms / 1000
+        bob = BOB(300, 400)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            elif event.type == pygame.KEYDOWN:
+                key = pygame.key.get_pressed()
+                if key == pygame.K_ESCAPE:
+                    open_pause_menu()
+                collisions = []
+                bob.movement(dt, key, collisions, transitioning, game_paused)
+
+        screen.blit(outside, (0, 0))
+        bob.draw(screen)
+
+        pygame.display.flip()
+
 def level_select(events):
     global level_select_open, level_menu_just_opened
 
@@ -1292,6 +1325,7 @@ def level_select(events):
     level_menu.fill((0, 0, 0))
     level_menu_rect = pygame.Rect(25, 25, 750, 550)
     level_one_rect = pygame.Rect(55, 55, 690, 100)
+    level_two_rect = pygame.Rect(55, 165, 690, 100)
 
     for event in events:
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1299,6 +1333,10 @@ def level_select(events):
             if level_one_rect.collidepoint(cursor_pos) == True:
                 pygame.mixer.music.stop()
                 level_one()
+                return
+            elif level_two_rect.collidepoint(cursor_pos) == True:
+                pygame.mixer.music.stop()
+                level_two()
                 return
             else:
                 if level_menu_just_opened == False:
@@ -1309,7 +1347,9 @@ def level_select(events):
     screen.blit(level_menu, level_menu_rect.topleft)
     pygame.draw.rect(screen, (255, 255, 255), level_menu_rect, 3)
     pygame.draw.rect(screen, (64, 64, 64), level_one_rect)
-    screen.blit(level_one_text, level_one_rect.topleft)
+    screen.blit(level_one_text, (level_one_rect.topleft[0] + 10, level_one_rect.topleft[1] + 10))
+    pygame.draw.rect(screen, (64, 64, 64), level_two_rect)
+    screen.blit(level_two_text, (level_two_rect.topleft[0] + 10, level_two_rect.topleft[1] + 10))
 
 def main_menu():
     global running, dt, settings, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened, main_play_button_art
