@@ -261,6 +261,27 @@ electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3"
 electricity_channel = pygame.mixer.Channel(3)
 
 #Settings
+pause_menu = pygame.Surface((750, 550))
+pause_menu.set_alpha(223)
+pause_menu.fill((0, 0, 0))
+pause_menu_outline = pygame.Rect(25, 25, 750, 550)
+play_button = pygame.Rect(350, 250, 100, 100)
+exit_button = pygame.Rect(150, 250, 100, 100)
+settings_button = pygame.Rect(550, 250, 100, 100)
+settings_menu = pygame.Surface((750, 550))
+settings_menu.set_alpha(223)
+settings_menu.fill((0, 0, 0))
+settings_menu_outline = pygame.Rect(25, 25, 750, 550)
+settings_exit_button = pygame.Rect(700, 50, 50, 50)
+settings_checkboxes = [
+    pygame.Rect(600, 150, 50, 50)
+]
+settings_entries = [
+    pygame.Rect(550, 210, 100, 50)
+]
+entry_active = []
+new_fps = ""
+
 def open_pause_menu(cursor_pos, play_button, exit_button, settings_button, settings_exit_button, settings_checkboxes, settings_entries, entry_active):
     global settings, game_paused, settings_open
     if game_paused == True:
@@ -300,6 +321,8 @@ BASEMENT = "Basement"
 GROUND_FLOOR = "Ground floor"
 FIRST_FLOOR = "First floor"
 current_area = OUTSIDE
+transitioning = False
+game_paused = False
 
 #BOB
 class BOB:
@@ -627,26 +650,6 @@ def level_one():
     bob = BOB(300, 400)
     house.append(bob.rect)
 
-    pause_menu = pygame.Surface((750, 550))
-    pause_menu.set_alpha(223)
-    pause_menu.fill((0, 0, 0))
-    pause_menu_outline = pygame.Rect(25, 25, 750, 550)
-    play_button = pygame.Rect(350, 250, 100, 100)
-    exit_button = pygame.Rect(150, 250, 100, 100)
-    settings_button = pygame.Rect(550, 250, 100, 100)
-    settings_menu = pygame.Surface((750, 550))
-    settings_menu.set_alpha(223)
-    settings_menu.fill((0, 0, 0))
-    settings_menu_outline = pygame.Rect(25, 25, 750, 550)
-    settings_exit_button = pygame.Rect(700, 50, 50, 50)
-    settings_checkboxes = [
-        pygame.Rect(600, 150, 50, 50)
-    ]
-    settings_entries = [
-        pygame.Rect(550, 210, 100, 50)
-    ]
-    new_fps = ""
-
     inventory_surface = pygame.Surface((750, 550))
     inventory_surface.set_alpha(223)
     inventory_surface.fill((0, 0, 0))
@@ -671,7 +674,6 @@ def level_one():
     global game_paused, settings_open
     game_paused = False
     settings_open = False
-    entry_active = []
     walking_paused = False
     balcony_falling = False
     balcony_fall_distance = 0
@@ -1293,27 +1295,65 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused
+    global running, dt, settings, transitioning, game_paused, settings_open
+    settings_open = False
+
+    bob = BOB(300, 400)
 
     while running:
 
         dt_ms = clock.tick(settings["FPS"])
         dt = dt_ms / 1000
-        bob = BOB(300, 400)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                cursor_pos = pygame.mouse.get_pos()
+                open_pause_menu(cursor_pos, play_button, exit_button, settings_button, settings_exit_button, settings_checkboxes, settings_entries, entry_active)
+
             elif event.type == pygame.KEYDOWN:
-                key = pygame.key.get_pressed()
-                if key == pygame.K_ESCAPE:
-                    open_pause_menu()
-                collisions = []
-                bob.movement(dt, key, collisions, transitioning, game_paused)
+                if event.key == pygame.K_ESCAPE:
+                    game_paused = True
+        key = pygame.key.get_pressed()
+        collisions = []
+        bob.movement(dt, key, collisions, transitioning, game_paused)
 
         screen.blit(outside, (0, 0))
         bob.draw(screen)
+
+        if game_paused == True:
+            screen.blit(pause_menu, (25, 25))
+            pygame.draw.rect(screen, (255, 255, 255), pause_menu_outline, 3)
+            screen.blit(pause_menu_title, pause_menu_title_rect)
+            screen.blit(play_button_art, play_button.topleft)
+            screen.blit(exit_button_art, exit_button.topleft)
+            screen.blit(settings_button_art, settings_button.topleft)
+
+        if settings_open == True:
+            screen.blit(settings_menu, (25, 25))
+            pygame.draw.rect(screen, (255, 255, 255), settings_menu_outline, 3)
+            screen.blit(settings_menu_title, settings_menu_title_rect)
+            screen.blit(exit_settings_button_art, settings_exit_button)
+            for k in range(len(settings_text)):
+                screen.blit(settings_text[k], (100, 150 + 60*k))
+            for k in range(len(settings_checkboxes)):
+                if k in settings["Checked tickboxes"]:
+                    pygame.draw.rect(screen, (192, 192, 192), settings_checkboxes[k])
+                    pygame.draw.rect(screen, (255, 255, 255), settings_checkboxes[k], 3)
+                else:
+                    pygame.draw.rect(screen, (64, 64, 64), settings_checkboxes[k])
+                    pygame.draw.rect(screen, (255, 255, 255), settings_checkboxes[k], 3)
+            for k in range(len(settings_entries)):
+                if k in entry_active:
+                    pygame.draw.rect(screen, (92, 92, 92), settings_entries[k])
+                    pygame.draw.rect(screen, (255, 255, 255), settings_entries[k], 3)
+                else:
+                    pygame.draw.rect(screen, (64, 64, 64), settings_entries[k])
+                    pygame.draw.rect(screen, (255, 255, 255), settings_entries[k], 3)
+            new_fps_text = small_menu_font.render(new_fps, False, (255, 255, 255))
+            screen.blit(new_fps_text, (settings_entries[0].x + 5, settings_entries[0].y + 5))
 
         pygame.display.flip()
 
