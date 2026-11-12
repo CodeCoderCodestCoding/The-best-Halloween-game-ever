@@ -312,6 +312,53 @@ def open_pause_menu(cursor_pos, play_button, exit_button, settings_button, setti
                 else:
                     entry_active.append(k)
 
+#Raining function
+def raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time):
+    global outside
+    if transitioning == False and current_area == OUTSIDE:
+        darkness.set_alpha(150)
+    for drop in rain:
+        drop[1] += drop[2] * dt
+        drop_rect = pygame.Rect(drop[0] - 3, drop[1], 4, drop[3])
+        hit_block = any(
+            drop_rect.colliderect(block)
+            for block in gameplay + passable_gameplay + balcony
+        )
+        if hit_block or drop[1] > screen_size[1] - 100:
+            drop[0] = random.randint(0, screen_size[0])
+            drop[1] = random.randint(-20, -5)
+        pygame.draw.line(
+            screen,
+            (150, 180, 220),
+            (drop[0], drop[1]),
+            (drop[0] - 3, drop[1] + drop[3]),
+            2
+        )
+    #Lightning logic
+    if transitioning == False:
+        lightning_timer = pygame.time.get_ticks()
+        if lightning_timer - remainder_time >= 10000:
+            lightning_strike = random.randint(0, 5)
+            lightning_backgrounds = [
+                lightning1, lightning2, lightning3,
+                lightning4, lightning5, lightning6
+            ]
+            outside = lightning_backgrounds[lightning_strike]
+            thunder_sfx.play()
+            lightning_active = True
+            if current_area != BASEMENT and settings["Epilepsy safety"] == False:
+                darkness.set_alpha(0)
+            lightning_end_time = lightning_timer + lightning_duration
+            remainder_time = lightning_timer
+        if lightning_active and lightning_timer >= lightning_end_time:
+            outside = stormy_outside
+            lightning_active = False
+            if current_area == OUTSIDE:
+                darkness.set_alpha(150)
+            else:
+                darkness.set_alpha(240)
+    return remainder_time, lightning_active, lightning_end_time
+
 #Pre-game variables
 running = True
 level_select_open = False
@@ -926,7 +973,7 @@ def level_one():
         #Draw background(s)
         screen.blit(outside, (0, 0))
         if isRaining == True:
-            raining()
+            remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time)
         if current_area == GROUND_FLOOR or current_area == FIRST_FLOOR:
             screen.blit(creepy_house, (0,0))
         if current_area == BASEMENT:
@@ -1093,53 +1140,6 @@ def level_one():
         if current_area == OUTSIDE:
             screen.blit(door_art, door.topleft)
 
-        #Raining function
-        def raining():
-            global outside
-            nonlocal lightning_duration, lightning_active, lightning_end_time, remainder_time
-            if transitioning == False and current_area == OUTSIDE:
-                darkness.set_alpha(150)
-            for drop in rain:
-                drop[1] += drop[2] * dt
-                drop_rect = pygame.Rect(drop[0] - 3, drop[1], 4, drop[3])
-                hit_block = any(
-                    drop_rect.colliderect(block)
-                    for block in gameplay + passable_gameplay + balcony
-                )
-                if hit_block or drop[1] > screen_size[1] - 100:
-                    drop[0] = random.randint(0, screen_size[0])
-                    drop[1] = random.randint(-20, -5)
-                pygame.draw.line(
-                    screen,
-                    (150, 180, 220),
-                    (drop[0], drop[1]),
-                    (drop[0] - 3, drop[1] + drop[3]),
-                    2
-                )
-            #Lightning logic
-            if transitioning == False:
-                lightning_timer = pygame.time.get_ticks()
-                if lightning_timer - remainder_time >= 10000:
-                    lightning_strike = random.randint(0, 5)
-                    lightning_backgrounds = [
-                        lightning1, lightning2, lightning3,
-                        lightning4, lightning5, lightning6
-                    ]
-                    outside = lightning_backgrounds[lightning_strike]
-                    thunder_sfx.play()
-                    lightning_active = True
-                    if current_area != BASEMENT and settings["Epilepsy safety"] == False:
-                        darkness.set_alpha(0)
-                    lightning_end_time = lightning_timer + lightning_duration
-                    remainder_time = lightning_timer
-                if lightning_active and lightning_timer >= lightning_end_time:
-                    outside = stormy_outside
-                    lightning_active = False
-                    if current_area == OUTSIDE:
-                        darkness.set_alpha(150)
-                    else:
-                        darkness.set_alpha(240)
-
         #Activate raining
         if bob.rect.colliderect(raining_area) == True and isRaining == False:
             if raining_channel.get_busy() == False:
@@ -1295,10 +1295,28 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open
+    global running, dt, settings, transitioning, game_paused, settings_open, outside
     settings_open = False
 
+    rain = []
+    for k in range(150):
+        x = random.randint(0, screen_size[0])
+        y = random.randint(0, 100)
+        speed = random.randint(480, 900)
+        length = random.randint(8, 18)
+        rain.append([x, y, speed, length])
+    darkness = pygame.Surface(screen_size)
+    darkness.fill((0, 0, 0))
+    darkness.set_alpha(150)
+    remainder_time = pygame.time.get_ticks() + 5000
+    lightning_duration = 200
+    lightning_active = False
+    lightning_end_time = 0
+
+    outside = stormy_outside
+
     bob = BOB(300, 400)
+
 
     while running:
 
@@ -1316,12 +1334,19 @@ def level_two():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     game_paused = True
+
         key = pygame.key.get_pressed()
         collisions = []
         bob.movement(dt, key, collisions, transitioning, game_paused)
 
         screen.blit(outside, (0, 0))
         bob.draw(screen)
+
+        remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, [], [], [], transitioning, OUTSIDE, remainder_time, lightning_duration, lightning_active, lightning_end_time)
+        if raining_channel.get_busy() == False:
+            raining_channel.play(raining_sfx, loops=-1)
+
+        screen.blit(darkness, (0, 0))
 
         if game_paused == True:
             screen.blit(pause_menu, (25, 25))
