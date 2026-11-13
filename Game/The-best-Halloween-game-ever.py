@@ -488,8 +488,44 @@ class BOB:
         art_y = self.rect.bottom - self.art.get_height()
         screen.blit(self.art, (art_x, art_y))
 
+#Inventory
+class Inventory:
+    def __init__(self):
+        self.items = []
+
+    def add(self, item):
+        self.items.append(item)
+
+    def remove(self, item):
+        if item in self.items:
+            self.items.remove(item)
+
+    def has(self, item):
+        return item in self.items
+def draw_inventory():
+    if inventory_open == True:
+        screen.blit(inventory_surface, inventory_rect.topleft)
+        pygame.draw.rect(screen, (255, 255, 255), inventory_rect, 3)
+        screen.blit(inventory_title, inventory_title_rect)
+        if len(inventory.items) == 0:
+            screen.blit(text_font.render("Nothing in here!", False, (255, 255, 255)), (75, 75))
+        else:
+            for k in range(len(inventory.items)):
+                screen.blit(text_font.render(inventory.items[k], False, (255, 255, 255)), (75, 75 + 50*k))
+def open_inventory(event):
+    global inventory_open
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_e:
+            inventory_open = not inventory_open
+
+
+inventory = Inventory()
+
 def level_one():
-    global running, outside, rotated_not_pressed_button_art, breaker_box_off, settings, levels_unlocked, dt, raining_channel, current_area
+    global running, dt, raining_channel
+    global outside, rotated_not_pressed_button_art, breaker_box_off
+    global settings, levels_unlocked
+    global current_area, inventory_open, inventory_surface, inventory_rect
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -748,7 +784,6 @@ def level_one():
     creaking_played = False
     isStart_of_fadeSet = False
     has_bob_moved_after_transition = False
-    inventory = []
     inventory_open = False
     fireplace_state = "Closed"
     previous_fireplace_state = "Closed"
@@ -758,8 +793,6 @@ def level_one():
     elevator_move_distance = 0
     elevator_speed = 180
     cupboard_open = False
-    coal_in_inventory = False
-    lighter_in_inventory = False
     fire_alarm_on = False
     tome_opened = False
     dialogue_active = False
@@ -811,11 +844,10 @@ def level_one():
                     game_paused = True
 
                 #Inventory
-                if event.key == pygame.K_e:
-                    inventory_open = not inventory_open
+                open_inventory(event)
 
                 #Interactions
-                elif event.key == pygame.K_f:
+                if event.key == pygame.K_f:
 
                     #Button interaction
                     if bob.rect.colliderect(button) == True and clicked == False:
@@ -829,12 +861,12 @@ def level_one():
 
                     #Fireplace interaction
                     if bob.rect.colliderect(fireplace) == True:
-                        if "Lighter" in inventory and fireplace_state == "Contains Coal":
+                        if inventory.has("Lighter") == True and fireplace_state == "Contains Coal":
                             current_fireplace_art = fireplace_lit_art
                             fireplace_state = "Lit"
                             previous_fireplace_state = fireplace_state
                             inventory.remove("Lighter")
-                        elif "Coal" in inventory and fireplace_state == "Open":
+                        elif inventory.has("Coal") == True and fireplace_state == "Open":
                             current_fireplace_art = fireplace_with_coal_art
                             fireplace_state = "Contains Coal"
                             previous_fireplace_state = fireplace_state
@@ -1063,12 +1095,10 @@ def level_one():
                 rect.move_ip(0, -600)
             breaker_box.move_ip(0, -600)
             current_area = BASEMENT
-        if bob.rect.colliderect(coal) == True and coal_in_inventory == False:
-            inventory.append("Coal")
-            coal_in_inventory = True
-        if bob.rect.colliderect(lighter) == True and lighter_in_inventory == False:
-            inventory.append("Lighter")
-            lighter_in_inventory = True
+        if bob.rect.colliderect(coal) == True and inventory.has("Coal") == False:
+            inventory.add("Coal")
+        if bob.rect.colliderect(lighter) == True and inventory.has("Lighter") == False:
+            inventory.add("Lighter")
         if bob.rect.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
             fire_alarm_sfx.play(-1)
             fire_alarm_on = True
@@ -1189,9 +1219,9 @@ def level_one():
                 else:
                     screen.blit(cupboard_open_art, rect.topleft)
             if cupboard_open == True:
-                if coal_in_inventory == False:
+                if inventory.has("Coal") == False:
                     screen.blit(coal_art, coal.topleft)
-                if lighter_in_inventory == False:
+                if inventory.has("Lighter") == False:
                     screen.blit(lighter_art, lighter.topleft)
             for rect in floor + ceiling:
                 screen.blit(floorboard_art, rect.topleft)
@@ -1255,23 +1285,14 @@ def level_one():
                     for rect in other_ghosts:
                         screen.blit(other_ghost_art, rect.topleft)
 
-        #Inventory
-        if inventory_open == True:
-            screen.blit(inventory_surface, inventory_rect.topleft)
-            pygame.draw.rect(screen, (255, 255, 255), inventory_rect, 3)
-            screen.blit(inventory_title, inventory_title_rect)
-            if len(inventory) == 0:
-                screen.blit(text_font.render("Nothing in here!", False, (255, 255, 255)), (75, 75))
-            else:
-                for k in range(len(inventory)):
-                    screen.blit(text_font.render(inventory[k], False, (255, 255, 255)), (75, 75 + 50*k))
-
         #The tome
         if tome_opened == True:
             pygame.draw.rect(screen, (20, 20, 20), tome_content_rect)
             pygame.draw.rect(screen, (255, 255, 255), tome_content_rect, 3)
             for k in range(len(tome_content)):
                 screen.blit(tome_content[k], (75, 75 + 50*k))
+
+        draw_inventory()
 
         if game_paused == True:
             screen.blit(pause_menu, (25, 25))
@@ -1323,7 +1344,7 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside, not_pressed_button_art
+    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect
 
     #Objects
     gameplay = [
@@ -1343,19 +1364,30 @@ def level_two():
         pygame.Rect(1400, 300, 100, 100),
         pygame.Rect(1400, 400, 100, 100),
         pygame.Rect(1800, 300, 100, 100),
-        pygame.Rect(1800, 400, 100, 100)
+        pygame.Rect(1800, 400, 100, 100),
+        pygame.Rect(1900, 300, 100, 100),
+        pygame.Rect(2100, 400, 100, 100),
+        pygame.Rect(2200, 400, 100, 100)
     ]
     passable_gameplay = [
 
     ]
     buttons = [
-        pygame.Rect(713, 300, 74, 40)
+        pygame.Rect(713, 300, 74, 40),
+        pygame.Rect(1913, 400, 74, 40)
     ]
     wall_zero = [
         pygame.Rect(450, 450, 50, 50),
         pygame.Rect(1100, 100, 100, 100)
     ]
     gameplay.extend(wall_zero)
+    wall_one = [
+        pygame.Rect(2200, 300, 100, 100),
+        pygame.Rect(2200, 200, 100, 100),
+        pygame.Rect(2200, 100, 100, 100),
+        pygame.Rect(2200, 0, 100, 100)
+    ]
+    gameplay.extend(wall_one)
 
     #Rain and Lightning
     rain = []
@@ -1373,11 +1405,21 @@ def level_two():
     lightning_active = False
     lightning_end_time = 0
 
+    #Inventory
+    inventory_open = False
+    inventory_surface = pygame.Surface((750, 550))
+    inventory_surface.set_alpha(223)
+    inventory_surface.fill((0, 0, 0))
+    inventory_rect = pygame.Rect(25, 25, 750, 550)
+
     #Pre main loop variables
     settings_open = False
     current_area = OUTSIDE
     outside = stormy_outside
     walking_paused = True
+    not_pressed = []
+    not_pressed.extend(buttons)
+    pressed = []
 
     #BOB
     bob = BOB(300, 400)
@@ -1404,6 +1446,9 @@ def level_two():
             #If a key is pressed
             elif event.type == pygame.KEYDOWN:
 
+                #Inventory
+                open_inventory(event)
+
                 #If settings are opened
                 if event.key == pygame.K_ESCAPE:
                     game_paused = True
@@ -1411,14 +1456,28 @@ def level_two():
                 #Interactions
                 elif event.key == pygame.K_f:
 
-                    #Button 0
-                    if bob.rect.colliderect(buttons[0]) == True:
-                        for rect in wall_zero:
-                            if rect in gameplay:
-                                gameplay.remove(rect)
-                        wall_zero.clear()
-                        not_pressed_button_art = pressed_button_art
-                        click_sfx.play()
+                    for k in range(len(buttons)):
+                        if bob.rect.colliderect(buttons[k]) and buttons[k] in not_pressed:
+
+                            # Button 0
+                            if k == 0:
+                                for rect in wall_zero:
+                                    if rect in gameplay:
+                                        gameplay.remove(rect)
+                                wall_zero.clear()
+
+                            # Button 1
+                            elif k == 1:
+                                for rect in wall_one:
+                                    if rect in gameplay:
+                                        gameplay.remove(rect)
+                                wall_one.clear()
+
+                            not_pressed.remove(buttons[k])
+                            pressed.append(buttons[k])
+                            click_sfx.play()
+                            break
+
 
         #Jumping and gravity
         key = pygame.key.get_pressed()
@@ -1478,7 +1537,10 @@ def level_two():
         for rect in passable_gameplay:
             screen.blit(passable_art, rect.topleft)
         for rect in buttons:
-            screen.blit(not_pressed_button_art, rect.topleft)
+            if rect in pressed:
+                screen.blit(pressed_button_art, rect.topleft)
+            elif rect in not_pressed:
+                screen.blit(not_pressed_button_art, rect.topleft)
 
         #Drawing BOB
         bob.draw(screen)
@@ -1490,6 +1552,8 @@ def level_two():
 
         #Drawing darkness
         screen.blit(darkness, (0, 0))
+
+        draw_inventory()
 
         #Drawing pause menu
         if game_paused == True:
