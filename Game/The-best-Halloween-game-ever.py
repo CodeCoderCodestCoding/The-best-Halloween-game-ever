@@ -367,6 +367,7 @@ OUTSIDE = "Outside"
 BASEMENT = "Basement"
 GROUND_FLOOR = "Ground floor"
 FIRST_FLOOR = "First floor"
+CAVE = "Cave"
 current_area = OUTSIDE
 transitioning = False
 game_paused = False
@@ -1074,7 +1075,7 @@ def level_one():
                 elif walking_paused == True:
                     walking_channel.unpause()
                     walking_paused = False
-                elif not walking_channel.get_busy():
+                elif walking_channel.get_busy() == False:
                     walking_channel.play(sound_to_play, loops=-1)
             else:
                 if walking_paused == False:
@@ -1296,8 +1297,13 @@ def level_one():
 #Level 2
 def level_two():
     global running, dt, settings, transitioning, game_paused, settings_open, outside
-    settings_open = False
 
+    #Objects
+    gameplay = [
+        pygame.Rect(500, 400, 100, 100)
+    ]
+
+    #Rain and Lightning
     rain = []
     for k in range(150):
         x = random.randint(0, screen_size[0])
@@ -1313,41 +1319,106 @@ def level_two():
     lightning_active = False
     lightning_end_time = 0
 
+    #Pre main loop variables
+    settings_open = False
+    current_area = OUTSIDE
     outside = stormy_outside
+    walking_paused = True
 
+    #BOB
     bob = BOB(300, 400)
 
+    #Main loop
+    while running == True:
 
-    while running:
-
+        #Timing
         dt_ms = clock.tick(settings["FPS"])
         dt = dt_ms / 1000
 
+        #Event handlign
         for event in pygame.event.get():
+
+            #If game is quit
             if event.type == pygame.QUIT:
                 running = False
 
+            #If screen is clicked
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 cursor_pos = pygame.mouse.get_pos()
                 open_pause_menu(cursor_pos, play_button, exit_button, settings_button, settings_exit_button, settings_checkboxes, settings_entries, entry_active)
 
+            #If a key is pressed
             elif event.type == pygame.KEYDOWN:
+
+                #If settings are opened
                 if event.key == pygame.K_ESCAPE:
                     game_paused = True
 
+        #Jumping and gravity
         key = pygame.key.get_pressed()
         collisions = []
+        collisions.extend(gameplay)
         bob.movement(dt, key, collisions, transitioning, game_paused)
 
+        #Movement
+        scroll_x = 0
+        if transitioning == False and game_paused == False:
+            if key[pygame.K_a] == True:
+                scroll_x = 420 * dt
+            if key[pygame.K_d] == True:
+                scroll_x = -420 * dt
+            isMoving = (key[pygame.K_a] or key[pygame.K_d]) and not transitioning and not game_paused
+            if isMoving == True:
+                if current_area == OUTSIDE and bob.rect.bottom >= screen_size[1]:
+                    sound_to_play = walking_grass_sfx
+                elif current_area == CAVE and bob.rect.bottom >= screen_size[1]:
+                    sound_to_play = walking_stone_sfx
+                else:
+                    sound_to_play = walking_wood_sfx
+                if walking_channel.get_sound() != sound_to_play:
+                    walking_channel.stop()
+                    walking_channel.play(sound_to_play, loops=-1)
+                    walking_paused = False
+                elif walking_paused == True:
+                    walking_channel.unpause()
+                    walking_paused = False
+                elif walking_channel.get_busy() == False:
+                    walking_channel.play(sound_to_play, loops=-1)
+            else:
+                if walking_paused == False:
+                    walking_channel.pause()
+                    walking_paused = True
+            if scroll_x != 0 or transitioning == True or game_paused == True:
+                can_scroll = True
+                for rect in gameplay:
+                    future_rect = rect.move(scroll_x, 0)
+                    if bob.rect.colliderect(future_rect) == True:
+                        can_scroll = False
+                        break
+                if can_scroll == True:
+                    for rect in gameplay:
+                        rect.move_ip(scroll_x, 0)
+
+
+        #Drawing screen
         screen.blit(outside, (0, 0))
+
+        #Drawing objects
+        for rect in gameplay:
+            screen.blit(crate, rect.topleft)
+
+        #Drawing BOB
         bob.draw(screen)
 
-        remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, [], [], [], transitioning, OUTSIDE, remainder_time, lightning_duration, lightning_active, lightning_end_time)
+        #Drawing rain
+        remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, gameplay, [], [], transitioning, OUTSIDE, remainder_time, lightning_duration, lightning_active, lightning_end_time)
         if raining_channel.get_busy() == False:
             raining_channel.play(raining_sfx, loops=-1)
 
+        #Drawing darkness
         screen.blit(darkness, (0, 0))
 
+        #Drawing pause menu
         if game_paused == True:
             screen.blit(pause_menu, (25, 25))
             pygame.draw.rect(screen, (255, 255, 255), pause_menu_outline, 3)
@@ -1356,6 +1427,7 @@ def level_two():
             screen.blit(exit_button_art, exit_button.topleft)
             screen.blit(settings_button_art, settings_button.topleft)
 
+        #Drawing settigns menu
         if settings_open == True:
             screen.blit(settings_menu, (25, 25))
             pygame.draw.rect(screen, (255, 255, 255), settings_menu_outline, 3)
