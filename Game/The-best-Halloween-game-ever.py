@@ -1543,11 +1543,15 @@ def level_select(events):
             if level_one_rect.collidepoint(cursor_pos) == True:
                 pygame.mixer.music.stop()
                 level_one()
+                if running:
+                    pygame.mixer.music.play(-1)
                 return
             elif level_two_rect.collidepoint(cursor_pos) == True:
                 if levels_unlocked["Chapter 2"] == True:
                     pygame.mixer.music.stop()
                     level_two()
+                    if running:
+                        pygame.mixer.music.play(-1)
                     return
             else:
                 if level_menu_just_opened == False:
@@ -1613,7 +1617,8 @@ def main_menu():
         return pygame.transform.scale(surface, new_size)
         
     #Music
-    pygame.mixer.music.play(-1)
+    if pygame.mixer.music.get_busy() == False:
+        pygame.mixer.music.play(-1)
 
     #Main loop
     while running == True:
