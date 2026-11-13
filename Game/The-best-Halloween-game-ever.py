@@ -193,9 +193,9 @@ def load_art(art):
 crate = load_art(ASSETS_DIR / "Art" / "Objects" / "Crate.png")
 small_crate = load_art(ASSETS_DIR / "Art" / "Objects" / "Small crate.png")
 not_pressed_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Button (not pressed).png")
-not_pressed_button_art = pygame.transform.rotate(not_pressed_button_art, 90)
+rotated_not_pressed_button_art = pygame.transform.rotate(not_pressed_button_art, 90)
 pressed_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Button (pressed).png")
-pressed_button_art = pygame.transform.rotate(pressed_button_art, 90)
+rotated_pressed_button_art = pygame.transform.rotate(pressed_button_art, 90)
 passable_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Passable crate.png")
 balcony_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Balcony.png")
 door_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Door.png")
@@ -470,7 +470,7 @@ class BOB:
         screen.blit(self.art, (art_x, art_y))
 
 def level_one():
-    global running, outside, not_pressed_button_art, breaker_box_off, settings, dt, raining_channel, current_area
+    global running, outside, rotated_not_pressed_button_art, breaker_box_off, settings, dt, raining_channel, current_area
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -803,7 +803,7 @@ def level_one():
                             if rect in gameplay:
                                 gameplay.remove(rect)
                         wall0.clear()
-                        not_pressed_button_art = pressed_button_art
+                        rotated_not_pressed_button_art = rotated_pressed_button_art
                         click_sfx.play()
                         clicked = True
 
@@ -1131,7 +1131,7 @@ def level_one():
         screen.blit(instruction_crouch, instruction_crouch_rect)
         screen.blit(instruction_interact, instruction_interact_rect)
         screen.blit(instruction_open_inventory, instruction_open_inventory_rect)
-        screen.blit(not_pressed_button_art, button.topleft)
+        screen.blit(rotated_not_pressed_button_art, button.topleft)
         for rect in gameplay + entrance:
             screen.blit(crate, rect.topleft)
         for rect in passable_gameplay:
@@ -1296,12 +1296,33 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside
+    global running, dt, settings, transitioning, game_paused, settings_open, outside, not_pressed_button_art
 
     #Objects
     gameplay = [
-        pygame.Rect(500, 400, 100, 100)
+        pygame.Rect(500, 400, 50, 50),
+        pygame.Rect(550, 400, 50, 50),
+        pygame.Rect(600, 400, 50, 50),
+        pygame.Rect(650, 400, 50, 50),
+        pygame.Rect(600, 300, 100, 100),
+        pygame.Rect(400, 200, 100, 100),
+        pygame.Rect(650, 100, 50, 50),
+        pygame.Rect(700, 200, 100, 100),
+        pygame.Rect(1100, 200, 100, 100),
+        pygame.Rect(1100, 300, 100, 100),
+        pygame.Rect(1100, 400, 100, 100)
     ]
+    passable_gameplay = [
+
+    ]
+    buttons = [
+        pygame.Rect(713, 300, 74, 40)
+    ]
+    wall_zero = [
+        pygame.Rect(450, 450, 50, 50),
+        pygame.Rect(1100, 100, 100, 100)
+    ]
+    gameplay.extend(wall_zero)
 
     #Rain and Lightning
     rain = []
@@ -1335,7 +1356,7 @@ def level_two():
         dt_ms = clock.tick(settings["FPS"])
         dt = dt_ms / 1000
 
-        #Event handlign
+        #Event handling
         for event in pygame.event.get():
 
             #If game is quit
@@ -1354,10 +1375,22 @@ def level_two():
                 if event.key == pygame.K_ESCAPE:
                     game_paused = True
 
+                #Interactions
+                elif event.key == pygame.K_f:
+
+                    #Button 0
+                    if bob.rect.colliderect(buttons[0]) == True:
+                        for rect in wall_zero:
+                            if rect in gameplay:
+                                gameplay.remove(rect)
+                        wall_zero.clear()
+                        not_pressed_button_art = pressed_button_art
+                        click_sfx.play()
+
         #Jumping and gravity
         key = pygame.key.get_pressed()
         collisions = []
-        collisions.extend(gameplay)
+        collisions.extend(gameplay + passable_gameplay)
         bob.movement(dt, key, collisions, transitioning, game_paused)
 
         #Movement
@@ -1396,7 +1429,7 @@ def level_two():
                         can_scroll = False
                         break
                 if can_scroll == True:
-                    for rect in gameplay:
+                    for rect in gameplay + passable_gameplay + buttons:
                         rect.move_ip(scroll_x, 0)
 
 
@@ -1405,7 +1438,14 @@ def level_two():
 
         #Drawing objects
         for rect in gameplay:
-            screen.blit(crate, rect.topleft)
+            if rect.width == 50:
+                screen.blit(small_crate, rect.topleft)
+            else:
+                screen.blit(crate, rect.topleft)
+        for rect in passable_gameplay:
+            screen.blit(passable_art, rect.topleft)
+        for rect in buttons:
+            screen.blit(not_pressed_button_art, rect.topleft)
 
         #Drawing BOB
         bob.draw(screen)
