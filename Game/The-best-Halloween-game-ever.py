@@ -22,7 +22,7 @@ pygame.mixer.set_num_channels(32)
 
 #Settings
 SETTINGS_FILE = "settings.json"
-default_settings = {
+bootstrap_settings = {
     "Checked tickboxes": [],
     "Epilepsy safety": False,
     "FPS": 60
@@ -31,13 +31,32 @@ def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, "r") as file:
-                return {**default_settings, **json.load(file)}
+                return {**bootstrap_settings, **json.load(file)}
         except (json.JSONDecodeError, OSError):
             pass
-    return default_settings.copy()
+    return bootstrap_settings.copy()
 def save_settings(settings):
     with open(SETTINGS_FILE, "w") as file:
         json.dump(settings, file, indent=4)
+
+#Unlocking levels
+LEVELS_UNLOCKED = "levels_unlocked.json"
+bootstrap_levels_unlocked = {
+    "Chapter 1": True,
+    "Chapter 2": False
+}
+def load_levels():
+    if os.path.exists(LEVELS_UNLOCKED):
+        try:
+            with open(LEVELS_UNLOCKED, "r") as file:
+                return{**bootstrap_levels_unlocked, **json.load(file)}
+        except(json.JSONDecodeError, OSError):
+            pass
+    return bootstrap_levels_unlocked.copy()
+def unlock_level(levels):
+    with open(LEVELS_UNLOCKED, "w") as file:
+        json.dump(levels, file, indent=4)
+        
 
 #Loading fonts and text objects
 menu_font = pygame.font.SysFont("Retro Pixel", 60)
@@ -54,7 +73,7 @@ title_text_two = title_font.render("GAME EVER", False, (255, 255, 255))
 title_text_two_rect = title_text_two.get_rect(topleft = (200, 110))
 
 level_one_text = menu_font.render("Chapter One", False, (255, 255, 255))
-level_two_text = menu_font.render("Chapter Two", False, (255, 255, 255))
+level_two_text = menu_font.render("Not Unlocked Yet", False, (255, 255, 255))
 
 pause_menu_title = menu_font.render("The best Halloween game ever", False, (255, 255, 255))
 pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
@@ -391,7 +410,7 @@ class BOB:
         # Artwork
         self.art = bob_art
 
-    def movement(self, dt, key, collisions, transitioning, game_paused):
+    def movement(self, dt, key, collisions, transitioning, game_paused, current_area):
 
         if transitioning == True or game_paused == True:
             return
@@ -470,7 +489,7 @@ class BOB:
         screen.blit(self.art, (art_x, art_y))
 
 def level_one():
-    global running, outside, rotated_not_pressed_button_art, breaker_box_off, settings, dt, raining_channel, current_area
+    global running, outside, rotated_not_pressed_button_art, breaker_box_off, settings, levels_unlocked, dt, raining_channel, current_area
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -746,6 +765,7 @@ def level_one():
     dialogue_active = False
     dialogue_stage = 0
     completed = False
+    time_since_completed_checked = False
 
     #Main loop
     while running:
@@ -969,7 +989,7 @@ def level_one():
 
         collisions = (gameplay + passable_gameplay + balcony + floor + ceiling + cobblestone_floor + basement_parkour + [dining_table, elevator_floor])
 
-        bob.movement(dt, key, collisions, transitioning, game_paused)
+        bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
         #Draw background(s)
         screen.blit(outside, (0, 0))
@@ -1287,9 +1307,16 @@ def level_one():
 
         #Escape
         if completed == True:
+            levels_unlocked["Chapter 2"] = True
+            unlock_level(levels_unlocked)
             alpha_fade(darkness, darkness.get_alpha(), 255, 240)
             screen.blit(level_complete, level_complete_rect)
             pygame.mixer.stop()
+            if time_since_completed_checked == False:
+                time_since_completed = pygame.time.get_ticks()
+                time_since_completed_checked = True
+            if pygame.time.get_ticks() - time_since_completed >= 3000:
+                return
 
         #Refresh rate
         pygame.display.flip()
@@ -1310,7 +1337,13 @@ def level_two():
         pygame.Rect(700, 200, 100, 100),
         pygame.Rect(1100, 200, 100, 100),
         pygame.Rect(1100, 300, 100, 100),
-        pygame.Rect(1100, 400, 100, 100)
+        pygame.Rect(1100, 400, 100, 100),
+        pygame.Rect(1400, 100, 100, 100),
+        pygame.Rect(1400, 200, 100, 100),
+        pygame.Rect(1400, 300, 100, 100),
+        pygame.Rect(1400, 400, 100, 100),
+        pygame.Rect(1800, 300, 100, 100),
+        pygame.Rect(1800, 400, 100, 100)
     ]
     passable_gameplay = [
 
@@ -1391,7 +1424,7 @@ def level_two():
         key = pygame.key.get_pressed()
         collisions = []
         collisions.extend(gameplay + passable_gameplay)
-        bob.movement(dt, key, collisions, transitioning, game_paused)
+        bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
         #Movement
         scroll_x = 0
@@ -1495,7 +1528,7 @@ def level_two():
         pygame.display.flip()
 
 def level_select(events):
-    global level_select_open, level_menu_just_opened
+    global level_select_open, level_menu_just_opened, levels_unlocked, level_two_text
 
     level_menu = pygame.Surface((750, 550))
     level_menu.set_alpha(223)
@@ -1512,9 +1545,10 @@ def level_select(events):
                 level_one()
                 return
             elif level_two_rect.collidepoint(cursor_pos) == True:
-                pygame.mixer.music.stop()
-                level_two()
-                return
+                if levels_unlocked["Chapter 2"] == True:
+                    pygame.mixer.music.stop()
+                    level_two()
+                    return
             else:
                 if level_menu_just_opened == False:
                     level_select_open = False
@@ -1526,13 +1560,16 @@ def level_select(events):
     pygame.draw.rect(screen, (64, 64, 64), level_one_rect)
     screen.blit(level_one_text, (level_one_rect.topleft[0] + 10, level_one_rect.topleft[1] + 10))
     pygame.draw.rect(screen, (64, 64, 64), level_two_rect)
+    if levels_unlocked["Chapter 2"] == True:
+        level_two_text = menu_font.render("Chapter Two", False, (255, 255, 255))
     screen.blit(level_two_text, (level_two_rect.topleft[0] + 10, level_two_rect.topleft[1] + 10))
 
 def main_menu():
-    global running, dt, settings, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened, main_play_button_art
+    global running, dt, settings, levels_unlocked, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened, main_play_button_art
 
-    #Settings
+    #Loading stuff
     settings = load_settings()
+    levels_unlocked = load_levels()
 
     #Objects
     main_play_button = pygame.Rect(300, 200, 200, 200)
