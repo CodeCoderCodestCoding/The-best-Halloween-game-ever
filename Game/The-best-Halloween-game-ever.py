@@ -146,6 +146,14 @@ creepy_house = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Creepy Hous
 basement_bg = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Basement background.png", screen_size)
 cave_bg = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Cave background.png", screen_size)
 
+#Scroll background
+def scroll_background(surface, background_x, speed):
+    background_width = surface.get_width()
+    background_x = (background_x + speed) % background_width
+    screen.blit(surface, (background_x - background_width, 0))
+    screen.blit(surface, (background_x, 0))
+    return background_x
+
 #Hue shifter
 def rainbow_filter(surface, hue_shift):
     pixels = pygame.surfarray.array3d(surface)
@@ -393,6 +401,8 @@ CAVE = "Cave"
 current_area = OUTSIDE
 transitioning = False
 game_paused = False
+outside_background_x = 0
+cave_background_x = 0
 
 #BOB
 class BOB:
@@ -526,7 +536,7 @@ inventory = Inventory()
 
 def level_one():
     global running, dt, raining_channel
-    global outside, rotated_not_pressed_button_art, breaker_box_off
+    global outside, rotated_not_pressed_button_art, breaker_box_off, outside_background_x
     global settings, levels_unlocked
     global current_area, inventory_open, inventory_surface, inventory_rect
 
@@ -1026,15 +1036,6 @@ def level_one():
 
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
-        #Draw background(s)
-        screen.blit(outside, (0, 0))
-        if isRaining == True:
-            remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time)
-        if current_area == GROUND_FLOOR or current_area == FIRST_FLOOR:
-            screen.blit(creepy_house, (0,0))
-        if current_area == BASEMENT:
-            screen.blit(basement_bg, (0,0))
-
         #Object interactions
         if bob.rect.colliderect(camera_change) == True:
             camera_locked = True
@@ -1108,6 +1109,7 @@ def level_one():
 
         #Left-Right movement
         scroll_x = 0
+        actual_scroll_x = 0
         if transitioning == False and game_paused == False:
             if key[pygame.K_a] == True:
                 scroll_x = 420 * dt
@@ -1165,6 +1167,7 @@ def level_one():
                         instruction_crouch_rect.x += scroll_x
                         instruction_interact_rect.x += scroll_x
                         instruction_open_inventory_rect.x += scroll_x
+                        actual_scroll_x = scroll_x
 
         #Falling baclony logic
         if balcony_falling == True:
@@ -1177,6 +1180,15 @@ def level_one():
                 balcony_falling = False
                 balcony_fell = True
                 landing_grass_sfx.play()
+
+        #Draw background(s)
+        outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
+        if isRaining == True:
+            remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time)
+        if current_area == GROUND_FLOOR or current_area == FIRST_FLOOR:
+            screen.blit(creepy_house, (0, 0))
+        if current_area == BASEMENT:
+            screen.blit(basement_bg, (0, 0))
 
         #Drawing Outside art on screen
         screen.blit(instruction_jump, instruction_jump_rect)
@@ -1347,7 +1359,7 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect
+    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x
 
     #Objects
     gameplay = [
@@ -1524,6 +1536,7 @@ def level_two():
 
         #Movement
         scroll_x = 0
+        actual_scroll_x = 0
         if transitioning == False and game_paused == False:
             if key[pygame.K_a] == True:
                 scroll_x = 420 * dt
@@ -1560,6 +1573,7 @@ def level_two():
                 if can_scroll == True:
                     for rect in gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect]:
                         rect.move_ip(scroll_x, 0)
+                    actual_scroll_x = scroll_x
 
         #Collisions that trigger things
         if any(bob.rect.colliderect(rect) for rect in cave_front):
@@ -1574,9 +1588,9 @@ def level_two():
                 current_area = OUTSIDE
 
         #Drawing screen
-        screen.blit(outside, (0, 0))
+        outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
         if current_area == CAVE:
-            screen.blit(cave_bg, (0, 0))
+            cave_background_x = scroll_background(cave_bg, cave_background_x, actual_scroll_x)
 
         #Drawing BOB
         bob.draw(screen)
