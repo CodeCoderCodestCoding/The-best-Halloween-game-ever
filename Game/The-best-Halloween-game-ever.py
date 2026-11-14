@@ -7,7 +7,6 @@ import json
 import os
 import random
 import pygame
-import pygame.surfarray
 
 #Initialisation
 pygame.init()
@@ -145,6 +144,7 @@ lightning5 = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Lightning5.pn
 lightning6 = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Lightning6.png", screen_size)
 creepy_house = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Creepy House.png", screen_size)
 basement_bg = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Basement background.png", screen_size)
+cave_bg = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Cave background.png", screen_size)
 
 #Hue shifter
 def rainbow_filter(surface, hue_shift):
@@ -253,6 +253,9 @@ original_play_button_art = main_play_button_art.copy()
 exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
+cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
+cave_floor_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave floor.png")
+cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
 
 #Loading player models and other things that look like the player
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
@@ -332,7 +335,7 @@ def open_pause_menu(cursor_pos, play_button, exit_button, settings_button, setti
                     entry_active.append(k)
 
 #Raining function
-def raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time):
+def raining(dt, rain, darkness, gameplay, passable_gameplay, misc, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time):
     global outside
     if transitioning == False and current_area == OUTSIDE:
         darkness.set_alpha(150)
@@ -341,7 +344,7 @@ def raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transition
         drop_rect = pygame.Rect(drop[0] - 3, drop[1], 4, drop[3])
         hit_block = any(
             drop_rect.colliderect(block)
-            for block in gameplay + passable_gameplay + balcony
+            for block in gameplay + passable_gameplay + misc
         )
         if hit_block or drop[1] > screen_size[1] - 100:
             drop[0] = random.randint(0, screen_size[0])
@@ -365,7 +368,7 @@ def raining(dt, rain, darkness, gameplay, passable_gameplay, balcony, transition
             outside = lightning_backgrounds[lightning_strike]
             thunder_sfx.play()
             lightning_active = True
-            if current_area != BASEMENT and settings["Epilepsy safety"] == False:
+            if current_area not in [BASEMENT, CAVE] and settings["Epilepsy safety"] == False:
                 darkness.set_alpha(0)
             lightning_end_time = lightning_timer + lightning_duration
             remainder_time = lightning_timer
@@ -1389,6 +1392,37 @@ def level_two():
     ]
     gameplay.extend(wall_one)
 
+    cave_front = [
+        pygame.Rect(2800, 400, 100, 100),
+        pygame.Rect(2900, 400, 100, 100),
+        pygame.Rect(3000, 400, 100, 100),
+        pygame.Rect(3100, 400, 100, 100),
+        pygame.Rect(3200, 400, 100, 100),
+        pygame.Rect(2900, 300, 100, 100),
+        pygame.Rect(3000, 300, 100, 100),
+        pygame.Rect(3100, 300, 100, 100),
+        pygame.Rect(3200, 300, 100, 100),
+        pygame.Rect(3000, 200, 100, 100),
+        pygame.Rect(3100, 200, 100, 100),
+        pygame.Rect(3200, 200, 100, 100),
+        pygame.Rect(3100, 100, 100, 100),
+        pygame.Rect(3200, 100, 100, 100),
+        pygame.Rect(3200, 0, 100, 100),
+    ]
+    cave_front.extend(
+        [
+            pygame.Rect(100 * i + 3300, 100 * j, 100, 100)
+            for i in range(8)
+            for j in range(5)
+        ]
+    )
+    cave_floor = [
+        pygame.Rect(100 * k + 2800, 500, 100, 100)
+        for k in range(30)
+    ]
+
+    transition_rect = pygame.Rect(3600, 0, 10, 600)
+
     #Rain and Lightning
     rain = []
     for k in range(150):
@@ -1420,6 +1454,7 @@ def level_two():
     not_pressed = []
     not_pressed.extend(buttons)
     pressed = []
+    transitioning_into_cave = False
 
     #BOB
     bob = BOB(300, 400)
@@ -1482,7 +1517,9 @@ def level_two():
         #Jumping and gravity
         key = pygame.key.get_pressed()
         collisions = []
-        collisions.extend(gameplay + passable_gameplay)
+        collisions.extend(gameplay + passable_gameplay + cave_floor)
+        if current_area == CAVE:
+            collisions.extend(cave_front)
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
         #Movement
@@ -1521,14 +1558,34 @@ def level_two():
                         can_scroll = False
                         break
                 if can_scroll == True:
-                    for rect in gameplay + passable_gameplay + buttons:
+                    for rect in gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect]:
                         rect.move_ip(scroll_x, 0)
 
+        #Collisions that trigger things
+        if any(bob.rect.colliderect(rect) for rect in cave_front):
+            cave_front_art.set_alpha(200)
+        else:
+            cave_front_art.set_alpha(255)
+        if bob.rect.colliderect(transition_rect) == True and transitioning_into_cave == False:
+            transitioning_into_cave = True
+            if current_area == OUTSIDE:
+                current_area = CAVE
+            elif current_area == CAVE:
+                current_area = OUTSIDE
 
         #Drawing screen
         screen.blit(outside, (0, 0))
+        if current_area == CAVE:
+            screen.blit(cave_bg, (0, 0))
+
+        #Drawing BOB
+        bob.draw(screen)
 
         #Drawing objects
+        for rect in cave_front:
+            screen.blit(cave_front_art, rect.topleft)
+        for rect in cave_floor:
+            screen.blit(cave_floor_art, rect.topleft)
         for rect in gameplay:
             if rect.width == 50:
                 screen.blit(small_crate, rect.topleft)
@@ -1542,11 +1599,9 @@ def level_two():
             elif rect in not_pressed:
                 screen.blit(not_pressed_button_art, rect.topleft)
 
-        #Drawing BOB
-        bob.draw(screen)
-
         #Drawing rain
-        remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, gameplay, [], [], transitioning, OUTSIDE, remainder_time, lightning_duration, lightning_active, lightning_end_time)
+        if current_area == OUTSIDE:
+            remainder_time, lightning_active, lightning_end_time = raining(dt, rain, darkness, gameplay, passable_gameplay, cave_front, transitioning, OUTSIDE, remainder_time, lightning_duration, lightning_active, lightning_end_time)
         if raining_channel.get_busy() == False:
             raining_channel.play(raining_sfx, loops=-1)
 
@@ -1588,6 +1643,8 @@ def level_two():
                     pygame.draw.rect(screen, (255, 255, 255), settings_entries[k], 3)
             new_fps_text = small_menu_font.render(new_fps, False, (255, 255, 255))
             screen.blit(new_fps_text, (settings_entries[0].x + 5, settings_entries[0].y + 5))
+
+        pygame.draw.rect(screen, (255, 255, 0), transition_rect)
 
         pygame.display.flip()
 
