@@ -342,6 +342,22 @@ def open_pause_menu(cursor_pos, play_button, exit_button, settings_button, setti
                 else:
                     entry_active.append(k)
 
+
+#Alpha fade function
+def alpha_fade(surface, current_alpha, target_alpha, fade_speed):
+    if current_alpha < target_alpha:
+        current_alpha = min(
+            current_alpha + fade_speed * dt,
+            target_alpha
+        )
+    elif current_alpha > target_alpha:
+        current_alpha = max(
+            current_alpha - fade_speed * dt,
+            target_alpha
+    )
+    surface.set_alpha(int(current_alpha))
+    return current_alpha
+
 #Raining function
 def raining(dt, rain, darkness, gameplay, passable_gameplay, misc, transitioning, current_area, remainder_time, lightning_duration, lightning_active, lightning_end_time):
     global outside
@@ -1014,21 +1030,6 @@ def level_one():
                         rect.move_ip(0, -600)
                     breaker_box.move_ip(0, -600)
 
-        #Alpha fade function
-        def alpha_fade(surface, current_alpha, target_alpha, fade_speed):
-            if current_alpha < target_alpha:
-                current_alpha = min(
-                    current_alpha + fade_speed * dt,
-                    target_alpha
-                )
-            elif current_alpha > target_alpha:
-                current_alpha = max(
-                    current_alpha - fade_speed * dt,
-                    target_alpha
-            )
-            surface.set_alpha(int(current_alpha))
-            return current_alpha
-
         #Detects which key was pressed
         key = pygame.key.get_pressed()
 
@@ -1434,6 +1435,8 @@ def level_two():
     ]
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
+    camera_lock = pygame.Rect(5790, 0, 10, 600)
+    falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
 
     #Rain and Lightning
     rain = []
@@ -1445,7 +1448,7 @@ def level_two():
         rain.append([x, y, speed, length])
     darkness = pygame.Surface(screen_size)
     darkness.fill((0, 0, 0))
-    darkness.set_alpha(150)
+    darkness.set_alpha(200)
     remainder_time = pygame.time.get_ticks() + 5000
     lightning_duration = 200
     lightning_active = False
@@ -1467,6 +1470,8 @@ def level_two():
     not_pressed.extend(buttons)
     pressed = []
     transitioning_into_cave = False
+    camera_locked = False
+    falling_locked = False
 
     #BOB
     bob = BOB(300, 400)
@@ -1535,45 +1540,51 @@ def level_two():
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
         #Movement
-        scroll_x = 0
-        actual_scroll_x = 0
-        if transitioning == False and game_paused == False:
-            if key[pygame.K_a] == True:
-                scroll_x = 420 * dt
-            if key[pygame.K_d] == True:
-                scroll_x = -420 * dt
-            isMoving = (key[pygame.K_a] or key[pygame.K_d]) and not transitioning and not game_paused
-            if isMoving == True:
-                if current_area == OUTSIDE and bob.rect.bottom >= screen_size[1]:
-                    sound_to_play = walking_grass_sfx
-                elif current_area == CAVE and bob.rect.bottom >= screen_size[1]:
-                    sound_to_play = walking_stone_sfx
+        if falling_locked == False:
+            scroll_x = 0
+            actual_scroll_x = 0
+            if transitioning == False and game_paused == False:
+                if key[pygame.K_a] == True:
+                    scroll_x = 420 * dt
+                if key[pygame.K_d] == True:
+                    scroll_x = -420 * dt
+                isMoving = (key[pygame.K_a] or key[pygame.K_d]) and not transitioning and not game_paused
+                if isMoving == True:
+                    if current_area == OUTSIDE and bob.rect.bottom >= screen_size[1]:
+                        sound_to_play = walking_grass_sfx
+                    elif current_area == CAVE and bob.rect.bottom >= screen_size[1]:
+                        sound_to_play = walking_stone_sfx
+                    else:
+                        sound_to_play = walking_wood_sfx
+                    if walking_channel.get_sound() != sound_to_play:
+                        walking_channel.stop()
+                        walking_channel.play(sound_to_play, loops=-1)
+                        walking_paused = False
+                    elif walking_paused == True:
+                        walking_channel.unpause()
+                        walking_paused = False
+                    elif walking_channel.get_busy() == False:
+                        walking_channel.play(sound_to_play, loops=-1)
                 else:
-                    sound_to_play = walking_wood_sfx
-                if walking_channel.get_sound() != sound_to_play:
-                    walking_channel.stop()
-                    walking_channel.play(sound_to_play, loops=-1)
-                    walking_paused = False
-                elif walking_paused == True:
-                    walking_channel.unpause()
-                    walking_paused = False
-                elif walking_channel.get_busy() == False:
-                    walking_channel.play(sound_to_play, loops=-1)
-            else:
-                if walking_paused == False:
-                    walking_channel.pause()
-                    walking_paused = True
-            if scroll_x != 0 or transitioning == True or game_paused == True:
-                can_scroll = True
-                for rect in gameplay:
-                    future_rect = rect.move(scroll_x, 0)
-                    if bob.rect.colliderect(future_rect) == True:
-                        can_scroll = False
-                        break
-                if can_scroll == True:
-                    for rect in gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect]:
-                        rect.move_ip(scroll_x, 0)
-                    actual_scroll_x = scroll_x
+                    if walking_paused == False:
+                        walking_channel.pause()
+                        walking_paused = True
+                if scroll_x != 0 or transitioning == True or game_paused == True:
+                    if camera_locked == True:
+                        future_hitbox = bob.rect.move(-scroll_x, 0)
+                        if not any(future_hitbox.colliderect(rect) for rect in collisions):
+                            bob.rect.x -= scroll_x
+                    else:
+                        can_scroll = True
+                        for rect in gameplay:
+                            future_rect = rect.move(scroll_x, 0)
+                            if bob.rect.colliderect(future_rect) == True:
+                                can_scroll = False
+                                break
+                        if can_scroll == True:
+                            for rect in gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect]:
+                                rect.move_ip(scroll_x, 0)
+                            actual_scroll_x = scroll_x
 
         #Collisions that trigger things
         if any(bob.rect.colliderect(rect) for rect in cave_front):
@@ -1586,6 +1597,16 @@ def level_two():
                 current_area = CAVE
             elif current_area == CAVE:
                 current_area = OUTSIDE
+        if bob.rect.colliderect(camera_lock) == True:
+            camera_locked = True
+        if bob.rect.colliderect(falling_lock_rect):
+            if falling_locked == False:
+                falling_locked = True
+                wait_time = pygame.time.get_ticks()
+
+        if falling_locked == True:
+            if pygame.time.get_ticks() - wait_time >= 3000:
+                alpha_fade(darkness, darkness.get_alpha(), 255, 240)
 
         #Drawing screen
         outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
@@ -1657,8 +1678,6 @@ def level_two():
                     pygame.draw.rect(screen, (255, 255, 255), settings_entries[k], 3)
             new_fps_text = small_menu_font.render(new_fps, False, (255, 255, 255))
             screen.blit(new_fps_text, (settings_entries[0].x + 5, settings_entries[0].y + 5))
-
-        pygame.draw.rect(screen, (255, 255, 0), transition_rect)
 
         pygame.display.flip()
 
