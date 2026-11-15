@@ -289,6 +289,8 @@ walking_channel = pygame.mixer.Channel(4)
 fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
 electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
+easter_egg_one_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Easter egg one.mp3")
+running_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Running.mp3")
 
 #Settings
 pause_menu = pygame.Surface((750, 550))
@@ -1360,7 +1362,7 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x
+    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x, bob
 
     #Objects
     gameplay = [
@@ -1438,6 +1440,8 @@ def level_two():
     camera_lock = pygame.Rect(5790, 0, 10, 600)
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
 
+    easter_egg_one = pygame.Rect(1000, 360, 70, 90)
+
     #Rain and Lightning
     rain = []
     for k in range(150):
@@ -1461,6 +1465,9 @@ def level_two():
     inventory_surface.fill((0, 0, 0))
     inventory_rect = pygame.Rect(25, 25, 750, 550)
 
+    #BOB
+    bob = BOB(300, 400)
+
     #Pre main loop variables
     settings_open = False
     current_area = OUTSIDE
@@ -1473,8 +1480,15 @@ def level_two():
     camera_locked = False
     falling_locked = False
 
-    #BOB
-    bob = BOB(300, 400)
+    easter_egg_one_on = False
+    easter_egg_one_finished = False
+    start_time = pygame.time.get_ticks() / 1000
+    duration = running_sfx.get_length()
+    x, y = bob.rect.topleft
+    target_x = cave_floor[0].topleft[0] + 200
+    target_y = cave_floor[0].topleft[1] + 100
+    start_x = x
+    start_y = y
 
     #Main loop
     while running == True:
@@ -1538,6 +1552,13 @@ def level_two():
         if current_area == CAVE:
             collisions.extend(cave_front)
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
+
+        if easter_egg_one_finished == True:
+            current_time = pygame.time.get_ticks() / 1000
+            t = min((current_time - start_time) / duration, 1)
+            x = start_x + (target_x - start_x) * t
+            y = start_y + (target_y - start_y) * t
+            bob.rect.topleft = (round(x), round(y))
 
         #Movement
         if falling_locked == False:
@@ -1608,6 +1629,23 @@ def level_two():
             if pygame.time.get_ticks() - wait_time >= 3000:
                 alpha_fade(darkness, darkness.get_alpha(), 255, 240)
 
+        #Easter eggs
+        if current_area == CAVE:
+            if easter_egg_one_on == False:
+                if scroll_x == 0:
+                    easter_egg_one_timer = pygame.time.get_ticks()
+                    easter_egg_one_on = True
+                else:
+                    easter_egg_one_timer = 0
+            if easter_egg_one_on == True and easter_egg_one_finished == False and pygame.time.get_ticks() - easter_egg_one_timer >= 10000:
+                easter_egg_one_sfx.play()
+                easter_egg_one.move_ip(-150 * dt, 0)
+                if easter_egg_one.left <= -100:
+                    easter_egg_one_sfx.stop()
+                    easter_egg_one_finished = True
+                    start_time = pygame.time.get_ticks() / 1000
+                    start_x, start_y = bob.rect.topleft
+
         #Drawing screen
         outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
         if current_area == CAVE:
@@ -1642,6 +1680,8 @@ def level_two():
 
         #Drawing darkness
         screen.blit(darkness, (0, 0))
+
+        screen.blit(other_ghost_art, easter_egg_one.topleft)
 
         draw_inventory()
 
