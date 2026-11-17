@@ -264,6 +264,7 @@ exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit se
 cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
 cave_floor_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave floor.png")
 cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
+spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
 
 #Loading player models and other things that look like the player
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
@@ -552,8 +553,21 @@ def open_inventory(event):
         if event.key == pygame.K_e:
             inventory_open = not inventory_open
 
-
 inventory = Inventory()
+
+#Spike spikes
+class Spike:
+    def __init__(self, x, y):
+        self.surface = pygame.Surface((50, 50), pygame.SRCALPHA)
+
+        pygame.draw.polygon(
+            self.surface,
+            (255, 255, 255),
+            [(25, 0), (50, 50), (0, 50)]
+        )
+
+        self.mask = pygame.mask.from_surface(self.surface)
+        self.rect = self.surface.get_rect(topleft=(x, y))
 
 def level_one():
     global running, dt, raining_channel
@@ -1369,7 +1383,7 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x, bob
+    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x, bob, Spike
 
     #Objects
     gameplay = [
@@ -1448,12 +1462,18 @@ def level_two():
             for k in range(50)
         ]
     )
+    spikes = [
+        Spike(6200, 400)
+    ]
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     camera_lock = pygame.Rect(5790, 0, 10, 600)
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
 
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
+
+    #Entire world
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect])
 
     #Rain and Lightning
     rain = []
@@ -1482,6 +1502,7 @@ def level_two():
     bob = BOB(300, 400)
 
     #Pre main loop variables
+    checkpoint = None
     settings_open = False
     current_area = OUTSIDE
     outside = stormy_outside
@@ -1618,8 +1639,10 @@ def level_two():
                                 can_scroll = False
                                 break
                         if can_scroll == True:
-                            for rect in gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect]:
+                            for rect in world_objects:
                                 rect.move_ip(scroll_x, 0)
+                            for spike in spikes:
+                                spike.rect.move_ip(scroll_x, 0)
                             actual_scroll_x = scroll_x
 
         #Collisions that trigger things
@@ -1671,6 +1694,11 @@ def level_two():
                     camera_locked = False
                     current_sub_area = CAVE_BOTTOM
                     falling_phase = 0
+                    checkpoint = {
+                        "bob_pos": bob.rect.topleft,
+                        "world_positions": [rect.topleft for rect in world_objects],
+                        "cave_background_x": cave_background_x
+                    }
 
 
         #Easter eggs
@@ -1689,6 +1717,21 @@ def level_two():
                     easter_egg_one_finished = True
                     start_time = pygame.time.get_ticks() / 1000
                     start_x, start_y = bob.rect.topleft
+
+        #Checkpoints
+        bob_mask = pygame.mask.from_surface(bob.art)
+        for spike in spikes:
+            offset = (spike.rect.x - bob.rect.x, spike.rect.y - bob.rect.y)
+            if bob_mask.overlap(spike.mask, offset) is not None:
+                if checkpoint is not None:
+                    bob.rect.topleft = checkpoint["bob_pos"]
+                    bob.y = float(bob.rect.y)
+                    bob.velocity_y = 0
+                    bob.on_ground = False
+                    bob.isCrouching = False
+                    for rect, pos in zip(world_objects, checkpoint["world_positions"]):
+                        rect.topleft = pos
+                    cave_background_x = checkpoint["cave_background_x"]
 
         #Drawing screen
         outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
@@ -1715,6 +1758,8 @@ def level_two():
                 screen.blit(pressed_button_art, rect.topleft)
             elif rect in not_pressed:
                 screen.blit(not_pressed_button_art, rect.topleft)
+        for spike in spikes:
+            screen.blit(spike_art, spike.rect.topleft)
 
         #Drawing rain
         if current_area == OUTSIDE:
