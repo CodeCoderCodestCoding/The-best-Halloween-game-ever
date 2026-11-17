@@ -416,7 +416,10 @@ BASEMENT = "Basement"
 GROUND_FLOOR = "Ground floor"
 FIRST_FLOOR = "First floor"
 CAVE = "Cave"
+CAVE_TOP = "Cave top"
+CAVE_BOTTOM = "Cave bottom"
 current_area = OUTSIDE
+current_sub_area = None
 transitioning = False
 game_paused = False
 outside_background_x = 0
@@ -816,6 +819,8 @@ def level_one():
     isStart_of_fadeSet = False
     has_bob_moved_after_transition = False
     inventory_open = False
+    coal_was_in_inventory = False
+    lighter_was_in_inventory = False
     fireplace_state = "Closed"
     previous_fireplace_state = "Closed"
     current_fireplace_art = fireplace_closed_art
@@ -1104,8 +1109,10 @@ def level_one():
             current_area = BASEMENT
         if bob.rect.colliderect(coal) == True and inventory.has("Coal") == False:
             inventory.add("Coal")
+            coal_was_in_inventory = True
         if bob.rect.colliderect(lighter) == True and inventory.has("Lighter") == False:
             inventory.add("Lighter")
+            lighter_was_in_inventory = True
         if bob.rect.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
             fire_alarm_sfx.play(-1)
             fire_alarm_on = True
@@ -1237,9 +1244,9 @@ def level_one():
                 else:
                     screen.blit(cupboard_open_art, rect.topleft)
             if cupboard_open == True:
-                if inventory.has("Coal") == False:
+                if inventory.has("Coal") == False and coal_was_in_inventory == False:
                     screen.blit(coal_art, coal.topleft)
-                if inventory.has("Lighter") == False:
+                if inventory.has("Lighter") == False and lighter_was_in_inventory == False:
                     screen.blit(lighter_art, lighter.topleft)
             for rect in floor + ceiling:
                 screen.blit(floorboard_art, rect.topleft)
@@ -1435,6 +1442,12 @@ def level_two():
         pygame.Rect(100 * k + 2800, 500, 100, 100)
         for k in range(30)
     ]
+    cave_floor.extend(
+        [
+            pygame.Rect(100*k + 5800, 1100, 100, 100)
+            for k in range(50)
+        ]
+    )
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     camera_lock = pygame.Rect(5790, 0, 10, 600)
@@ -1479,6 +1492,8 @@ def level_two():
     transitioning_into_cave = False
     camera_locked = False
     falling_locked = False
+    falling_phase = 0
+    falling_fade_speed = 240
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
@@ -1616,6 +1631,7 @@ def level_two():
             transitioning_into_cave = True
             if current_area == OUTSIDE:
                 current_area = CAVE
+                current_sub_area = CAVE_TOP
             elif current_area == CAVE:
                 current_area = OUTSIDE
         if bob.rect.colliderect(camera_lock) == True:
@@ -1623,14 +1639,42 @@ def level_two():
         if bob.rect.colliderect(falling_lock_rect):
             if falling_locked == False:
                 falling_locked = True
+                falling_phase = 0
                 wait_time = pygame.time.get_ticks()
 
+        # Falling transition
         if falling_locked == True:
-            if pygame.time.get_ticks() - wait_time >= 3000:
-                alpha_fade(darkness, darkness.get_alpha(), 255, 240)
+
+            if falling_phase == 0:
+                if pygame.time.get_ticks() - wait_time >= 3000:
+                    falling_phase = 1
+
+            elif falling_phase == 1:
+                alpha_fade(darkness, darkness.get_alpha(), 255, falling_fade_speed)
+                if darkness.get_alpha() >= 255:
+                    for rect in cave_floor:
+                        rect.move_ip(0, -600)
+                    camera_shift = 300 - bob.rect.x
+                    bob.rect.x += camera_shift
+                    bob.rect.y = 400
+                    bob.y = 400
+                    bob.velocity_y = 0
+                    bob.on_ground = True
+                    for rect in (gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect]):
+                        rect.x += camera_shift
+                    falling_phase = 2
+
+            elif falling_phase == 2:
+                alpha_fade(darkness, darkness.get_alpha(), 200, falling_fade_speed)
+                if darkness.get_alpha() <= 200:
+                    falling_locked = False
+                    camera_locked = False
+                    current_sub_area = CAVE_BOTTOM
+                    falling_phase = 0
+
 
         #Easter eggs
-        if current_area == CAVE:
+        if current_area == CAVE and current_sub_area == CAVE_TOP:
             if easter_egg_one_on == False:
                 if scroll_x == 0:
                     easter_egg_one_timer = pygame.time.get_ticks()
