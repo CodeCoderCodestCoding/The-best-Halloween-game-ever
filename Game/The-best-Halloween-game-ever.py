@@ -1383,7 +1383,7 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x, bob, Spike
+    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x, bob, Spike, current_sub_area
 
     #Objects
     gameplay = [
@@ -1462,18 +1462,24 @@ def level_two():
             for k in range(50)
         ]
     )
+    cave_wall = [
+        pygame.Rect(100*i + 5400, 100*j + 600, 100, 100)
+        for i in range(4)
+        for j in range(6)
+    ]
     spikes = [
-        Spike(6200, 400)
+        Spike(6200, 1000)
     ]
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
+    area_change_rect = pygame.Rect(4175, 0, 10, 600)
     camera_lock = pygame.Rect(5790, 0, 10, 600)
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
 
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect] + [spike.rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_floor + cave_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect] + [spike.rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1584,7 +1590,7 @@ def level_two():
         #Jumping and gravity
         key = pygame.key.get_pressed()
         collisions = []
-        collisions.extend(gameplay + passable_gameplay + cave_floor)
+        collisions.extend(gameplay + passable_gameplay + cave_floor + cave_wall)
         if current_area == CAVE:
             collisions.extend(cave_front)
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
@@ -1597,9 +1603,9 @@ def level_two():
             bob.rect.topleft = (round(x), round(y))
 
         #Movement
+        scroll_x = 0
+        actual_scroll_x = 0
         if falling_locked == False:
-            scroll_x = 0
-            actual_scroll_x = 0
             if transitioning == False and game_paused == False:
                 if key[pygame.K_a] == True:
                     scroll_x = 420 * dt
@@ -1633,7 +1639,7 @@ def level_two():
                             bob.rect.x -= scroll_x
                     else:
                         can_scroll = True
-                        for rect in gameplay:
+                        for rect in gameplay + cave_wall + (cave_front if current_area == CAVE else []):
                             future_rect = rect.move(scroll_x, 0)
                             if bob.rect.colliderect(future_rect) == True:
                                 can_scroll = False
@@ -1650,12 +1656,9 @@ def level_two():
             cave_front_art.set_alpha(255)
         if bob.rect.colliderect(transition_rect) == True and transitioning_into_cave == False:
             transitioning_into_cave = True
-            if current_area == OUTSIDE:
-                current_area = CAVE
-                current_sub_area = CAVE_TOP
-            elif current_area == CAVE:
-                current_area = OUTSIDE
-        if bob.rect.colliderect(camera_lock) == True:
+        if bob.rect.colliderect(area_change_rect) == True and not any(bob.rect.colliderect(rect) for rect in cave_front):
+            current_area = CAVE
+        if bob.rect.colliderect(camera_lock) == True and current_sub_area == CAVE_TOP:
             camera_locked = True
         if bob.rect.colliderect(falling_lock_rect):
             if falling_locked == False:
@@ -1673,7 +1676,7 @@ def level_two():
             elif falling_phase == 1:
                 alpha_fade(darkness, darkness.get_alpha(), 255, falling_fade_speed)
                 if darkness.get_alpha() >= 255:
-                    for rect in cave_floor:
+                    for rect in cave_floor + cave_wall + [spike.rect for spike in spikes]:
                         rect.move_ip(0, -600)
                     camera_shift = 300 - bob.rect.x
                     bob.rect.x += camera_shift
@@ -1681,7 +1684,7 @@ def level_two():
                     bob.y = 400
                     bob.velocity_y = 0
                     bob.on_ground = True
-                    for rect in (gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect]):
+                    for rect in world_objects:
                         rect.x += camera_shift
                     falling_phase = 2
 
@@ -1744,7 +1747,7 @@ def level_two():
 
         #Drawing screen
         outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
-        if current_area == CAVE:
+        if transitioning_into_cave == True:
             cave_background_x = scroll_background(cave_bg, cave_background_x, actual_scroll_x)
 
         #Drawing BOB
@@ -1755,6 +1758,8 @@ def level_two():
             screen.blit(cave_front_art, rect.topleft)
         for rect in cave_floor:
             screen.blit(cave_floor_art, rect.topleft)
+        for rect in cave_wall:
+            screen.blit(cave_block_art, rect.topleft)
         for rect in gameplay:
             if rect.width == 50:
                 screen.blit(small_crate, rect.topleft)
