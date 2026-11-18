@@ -558,7 +558,7 @@ inventory = Inventory()
 #Spike spikes
 class Spike:
     def __init__(self, x, y):
-        self.surface = pygame.Surface((50, 50), pygame.SRCALPHA)
+        self.surface = pygame.Surface((100, 100), pygame.SRCALPHA)
 
         pygame.draw.polygon(
             self.surface,
@@ -1473,7 +1473,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_floor + [transition_rect, camera_lock, falling_lock_rect] + [spike.rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1641,8 +1641,6 @@ def level_two():
                         if can_scroll == True:
                             for rect in world_objects:
                                 rect.move_ip(scroll_x, 0)
-                            for spike in spikes:
-                                spike.rect.move_ip(scroll_x, 0)
                             actual_scroll_x = scroll_x
 
         #Collisions that trigger things
@@ -1719,19 +1717,30 @@ def level_two():
                     start_x, start_y = bob.rect.topleft
 
         #Checkpoints
-        bob_mask = pygame.mask.from_surface(bob.art)
+        bob_art_current = crouching_art if bob.isCrouching else bob_art
+        bob_mask = pygame.mask.from_surface(bob_art_current)
+        bob_art_x = bob.rect.centerx - bob_art_current.get_width() // 2
+        bob_art_y = bob.rect.bottom - bob_art_current.get_height()
         for spike in spikes:
-            offset = (spike.rect.x - bob.rect.x, spike.rect.y - bob.rect.y)
+            offset = (
+                spike.rect.x - bob_art_x,
+                spike.rect.y - bob_art_y
+            )
             if bob_mask.overlap(spike.mask, offset) is not None:
                 if checkpoint is not None:
                     bob.rect.topleft = checkpoint["bob_pos"]
+                    bob.rect.height = bob.normal_hitbox_height
                     bob.y = float(bob.rect.y)
                     bob.velocity_y = 0
-                    bob.on_ground = False
+                    bob.on_ground = True
                     bob.isCrouching = False
                     for rect, pos in zip(world_objects, checkpoint["world_positions"]):
                         rect.topleft = pos
                     cave_background_x = checkpoint["cave_background_x"]
+                    camera_locked = False
+                    falling_locked = False
+                    falling_phase = 0
+                break
 
         #Drawing screen
         outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
