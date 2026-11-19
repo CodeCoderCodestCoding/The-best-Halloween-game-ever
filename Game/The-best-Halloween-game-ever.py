@@ -264,6 +264,7 @@ exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit se
 cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
 cave_floor_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave floor.png")
 cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
+cave_front_extra_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front extra.png")
 spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
 
 #Loading player models and other things that look like the player
@@ -1452,9 +1453,13 @@ def level_two():
             for j in range(5)
         ]
     )
+    cave_front_extra = [
+        pygame.Rect(100*k + 2700, 400 - 100*k, 100, 100)
+        for k in range(5)
+    ]
     cave_floor = [
-        pygame.Rect(100 * k + 2800, 500, 100, 100)
-        for k in range(30)
+        pygame.Rect(100 * k + 2700, 500, 100, 100)
+        for k in range(31)
     ]
     cave_floor.extend(
         [
@@ -1479,7 +1484,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_floor + cave_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect] + [spike.rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect] + [spike.rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1517,6 +1522,7 @@ def level_two():
     not_pressed.extend(buttons)
     pressed = []
     transitioning_into_cave = False
+    cave_front_has_hitox = False
     camera_locked = False
     falling_locked = False
     falling_phase = 0
@@ -1591,7 +1597,7 @@ def level_two():
         key = pygame.key.get_pressed()
         collisions = []
         collisions.extend(gameplay + passable_gameplay + cave_floor + cave_wall)
-        if current_area == CAVE:
+        if cave_front_has_hitox == True:
             collisions.extend(cave_front)
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
@@ -1639,7 +1645,7 @@ def level_two():
                             bob.rect.x -= scroll_x
                     else:
                         can_scroll = True
-                        for rect in gameplay + cave_wall + (cave_front if current_area == CAVE else []):
+                        for rect in gameplay + cave_wall + (cave_front if cave_front_has_hitox == True else []):
                             future_rect = rect.move(scroll_x, 0)
                             if bob.rect.colliderect(future_rect) == True:
                                 can_scroll = False
@@ -1650,14 +1656,17 @@ def level_two():
                             actual_scroll_x = scroll_x
 
         #Collisions that trigger things
-        if any(bob.rect.colliderect(rect) for rect in cave_front):
+        if any(bob.rect.colliderect(rect) for rect in cave_front + cave_front_extra):
             cave_front_art.set_alpha(200)
+            cave_front_extra_art.set_alpha(200)
         else:
             cave_front_art.set_alpha(255)
+            cave_front_extra_art.set_alpha(255)
         if bob.rect.colliderect(transition_rect) == True and transitioning_into_cave == False:
             transitioning_into_cave = True
-        if bob.rect.colliderect(area_change_rect) == True and not any(bob.rect.colliderect(rect) for rect in cave_front):
             current_area = CAVE
+        if bob.rect.colliderect(area_change_rect) == True and not any(bob.rect.colliderect(rect) for rect in cave_front):
+            cave_front_has_hitox = True
         if bob.rect.colliderect(camera_lock) == True and current_sub_area == CAVE_TOP:
             camera_locked = True
         if bob.rect.colliderect(falling_lock_rect):
@@ -1756,6 +1765,8 @@ def level_two():
         #Drawing objects
         for rect in cave_front:
             screen.blit(cave_front_art, rect.topleft)
+        for rect in cave_front_extra:
+            screen.blit(cave_front_extra_art, rect.topleft)
         for rect in cave_floor:
             screen.blit(cave_floor_art, rect.topleft)
         for rect in cave_wall:
