@@ -107,8 +107,10 @@ tome_content = [
     text_font.render("The breaker box is in the basement...someone turned it off..", False, (255, 255, 255)),
     text_font.render("The kitchen floor is weird...", False, (255, 255, 255)),
     text_font.render("What's in that cabinet?", False, (255, 255, 255)),
+    text_font.render("Thechickenisintheoven", False, (255, 255, 255)),
     text_font.render("Last I checked, the fireplace was empty...could do with some heat...", False, (255, 255, 255)),
     text_font.render("There has to be a fire alarm here somewhere, right?", False, (255, 255, 255)),
+    text_font.render("WHY DOES THE KITCHEN NOT HAVE A FIRE ALARM??!!", False, (255, 255, 255)),
     text_font.render("BLARGH WAS HERE...he didn't get out", False, (255, 255, 255)),
     text_font.render("blargh never really liked noise...", False, (255, 255, 255))
 ]
@@ -237,6 +239,7 @@ floorboard_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Floorboard.png")
 dining_table_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dining table.png")
 stove_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove closed.png")
 stove_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove open.png")
+stove_cooking_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove cooking.png")
 cupboard_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard closed.png")
 cupboard_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard open.png")
 elevator_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Elevator.png")
@@ -289,6 +292,8 @@ landing_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing o
 walking_wood_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on wood.mp3")
 walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on stone.mp3")
 walking_channel = pygame.mixer.Channel(4)
+fire_crackling_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire crackling.mp3")
+fire_crackling_channel = pygame.mixer.Channel(5)
 fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
 electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
@@ -944,7 +949,7 @@ def level_one():
 
                     #Stove interaction
                     if bob.rect.colliderect(stove) == True:
-                        current_stove_art = stove_open_art if current_stove_art == stove_closed_art else stove_closed_art
+                        current_stove_art = stove_open_art if current_stove_art == stove_closed_art else (stove_cooking_art if current_stove_art == stove_open_art else stove_closed_art)
 
                     #Breaker box interaction
                     if bob.rect.colliderect(breaker_box) == True and lights_on == False:
@@ -1059,6 +1064,10 @@ def level_one():
                     for rect in basement_parkour:
                         rect.move_ip(0, -600)
                     breaker_box.move_ip(0, -600)
+
+        #Fire crackling sfx
+        if ((current_fireplace_art == fireplace_lit_art) ^ (current_stove_art == stove_cooking_art)) and fire_crackling_channel.get_busy() == False:
+            fire_crackling_channel.play(fire_crackling_sfx, loops=-1)
 
         #Detects which key was pressed
         key = pygame.key.get_pressed()
