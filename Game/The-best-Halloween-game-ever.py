@@ -235,7 +235,8 @@ chair_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Chair.png")
 other_chair_art = pygame.transform.flip(chair_art, True, False)
 floorboard_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Floorboard.png")
 dining_table_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dining table.png")
-stove_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove.png")
+stove_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove closed.png")
+stove_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove open.png")
 cupboard_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard closed.png")
 cupboard_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard open.png")
 elevator_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Elevator.png")
@@ -839,6 +840,9 @@ def level_one():
     fireplace_state = "Closed"
     previous_fireplace_state = "Closed"
     current_fireplace_art = fireplace_closed_art
+    chicken_was_in_inventory = False
+    stove_state = "Closed"
+    current_stove_art = stove_closed_art
     lights_on = False
     elevator_moving = False
     elevator_move_distance = 0
@@ -937,6 +941,10 @@ def level_one():
                             else:
                                 current_fireplace_art = fireplace_open_art
                                 fireplace_state = "Open"
+
+                    #Stove interaction
+                    if bob.rect.colliderect(stove) == True:
+                        current_stove_art = stove_open_art if current_stove_art == stove_closed_art else stove_closed_art
 
                     #Breaker box interaction
                     if bob.rect.colliderect(breaker_box) == True and lights_on == False:
@@ -1246,7 +1254,7 @@ def level_one():
             screen.blit(current_fireplace_art, fireplace.topleft)
             screen.blit(tome_art, tome.topleft)
             screen.blit(dining_table_art, dining_table.topleft)
-            screen.blit(stove_art, stove.topleft)
+            screen.blit(current_stove_art, stove.topleft)
             for rect in chair:
                 screen.blit(chair_art, rect.topleft)
             for rect in other_chair:
