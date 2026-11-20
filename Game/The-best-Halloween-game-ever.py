@@ -240,6 +240,9 @@ dining_table_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dining table.png")
 stove_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove closed.png")
 stove_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove open.png")
 stove_cooking_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove cooking.png")
+raw_chicken_on_tray_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Raw chicken on tray.png")
+raw_chicken_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Raw chicken.png")
+cooked_chicken_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cooked chicken.png")
 cupboard_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard closed.png")
 cupboard_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard open.png")
 elevator_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Elevator.png")
@@ -579,7 +582,7 @@ class Spike:
 def level_one():
     global running, dt, raining_channel
     global outside, rotated_not_pressed_button_art, breaker_box_off, outside_background_x
-    global settings, levels_unlocked
+    global settings, new_fps, levels_unlocked
     global current_area, inventory_open, inventory_surface, inventory_rect
 
     #Objects
@@ -778,6 +781,7 @@ def level_one():
     breaker_box = pygame.Rect(0, 700, 100, 100)
     coal = pygame.Rect(5500, 400, 100, 100)
     lighter = pygame.Rect(5500, 300, 11, 45)
+    chicken = pygame.Rect(5500, 300, 100, 100)
     beds = [
         pygame.Rect(200, -500, 400, 400),
         pygame.Rect(1000, -500, 400, 400),
@@ -846,7 +850,9 @@ def level_one():
     previous_fireplace_state = "Closed"
     current_fireplace_art = fireplace_closed_art
     chicken_was_in_inventory = False
-    stove_state = "Closed"
+    chicken_in_oven = True
+    chicken_on_stove = False
+    chicken_is_cooked = False
     current_stove_art = stove_closed_art
     lights_on = False
     elevator_moving = False
@@ -950,6 +956,8 @@ def level_one():
                     #Stove interaction
                     if bob.rect.colliderect(stove) == True:
                         current_stove_art = stove_open_art if current_stove_art == stove_closed_art else (stove_cooking_art if current_stove_art == stove_open_art else stove_closed_art)
+                        if current_stove_art == stove_open_art and inventory.has("Chicken") == False:
+                            chicken_in_oven = False 
 
                     #Breaker box interaction
                     if bob.rect.colliderect(breaker_box) == True and lights_on == False:
@@ -1113,6 +1121,7 @@ def level_one():
                     elevator_floor.topleft = (2200, 180)
                     coal.topleft = (2200, 400)
                     lighter.topleft = (2245, 340)
+                    chicken.topleft = (1600, 300)
                     fire_alarm_check.topleft = (800, 0)
                     ghosts[0].topleft = (280, 300)
                     ghosts[1].topleft = (1080, 300)
@@ -1145,6 +1154,9 @@ def level_one():
         if bob.rect.colliderect(lighter) == True and inventory.has("Lighter") == False:
             inventory.add("Lighter")
             lighter_was_in_inventory = True
+        if bob.rect.colliderect(chicken) and inventory.has("Chicken") == False:
+            inventory.add("Chicken")
+            chicken_was_in_inventory = True
         if bob.rect.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
             fire_alarm_sfx.play(-1)
             fire_alarm_on = True
@@ -1280,6 +1292,14 @@ def level_one():
                     screen.blit(coal_art, coal.topleft)
                 if inventory.has("Lighter") == False and lighter_was_in_inventory == False:
                     screen.blit(lighter_art, lighter.topleft)
+            if chicken_in_oven == False:
+                if inventory.has("Chicken") == False:
+                    if chicken_is_cooked == True:
+                        screen.blit(cooked_chicken_art, chicken.topleft)
+                    elif chicken_on_stove == True:
+                        screen.blit(raw_chicken_art, chicken.topleft)
+                    else:
+                        screen.blit(raw_chicken_on_tray_art, chicken.topleft)
             for rect in floor + ceiling:
                 screen.blit(floorboard_art, rect.topleft)
 
