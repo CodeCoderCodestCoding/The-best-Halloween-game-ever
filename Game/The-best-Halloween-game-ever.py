@@ -1671,11 +1671,11 @@ def level_two():
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
+    easter_egg_bob_moving = False
+    easter_egg_one_timer = None
     start_time = pygame.time.get_ticks() / 1000
     duration = running_sfx.get_length()
     x, y = bob.rect.topleft
-    target_x = cave_floor[0].topleft[0] + 200
-    target_y = cave_floor[0].topleft[1] + 100
     start_x = x
     start_y = y
 
@@ -1742,17 +1742,21 @@ def level_two():
             collisions.extend(cave_front)
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
 
-        if easter_egg_one_finished == True:
+        if easter_egg_bob_moving == True:
             current_time = pygame.time.get_ticks() / 1000
             t = min((current_time - start_time) / duration, 1)
             x = start_x + (target_x - start_x) * t
             y = start_y + (target_y - start_y) * t
             bob.rect.topleft = (round(x), round(y))
+            if t >= 1:
+                easter_egg_bob_moving = False
+                bob.on_ground = False
+                bob.velocity_y = 0
 
         #Movement
         scroll_x = 0
         actual_scroll_x = 0
-        if falling_locked == False:
+        if falling_locked == False and easter_egg_one_on == False:
             if transitioning == False and game_paused == False:
                 if key[pygame.K_a] == True:
                     scroll_x = 420 * dt
@@ -1806,6 +1810,7 @@ def level_two():
         if bob.rect.colliderect(transition_rect) == True and transitioning_into_cave == False:
             transitioning_into_cave = True
             current_area = CAVE
+            current_sub_area = CAVE_TOP
         if bob.rect.colliderect(area_change_rect) == True and not any(bob.rect.colliderect(rect) for rect in cave_front):
             cave_front_has_hitox = True
         if bob.rect.colliderect(camera_lock) == True and current_sub_area == CAVE_TOP:
@@ -1828,8 +1833,8 @@ def level_two():
                 if darkness.get_alpha() >= 255:
                     for rect in world_objects:
                         rect.move_ip(0, -600)
-                    camera_shift = 300 - bob.rect.x
-                    bob.rect.x += camera_shift
+                    camera_shift = 300 - cave_floor[31].x
+                    bob.rect.x = 300
                     bob.rect.y = 400
                     bob.y = 400
                     bob.velocity_y = 0
@@ -1843,6 +1848,7 @@ def level_two():
                 if darkness.get_alpha() <= 200:
                     falling_locked = False
                     camera_locked = False
+                    transitioning = False
                     current_sub_area = CAVE_BOTTOM
                     falling_phase = 0
                     checkpoint = {
@@ -1851,23 +1857,32 @@ def level_two():
                         "cave_background_x": cave_background_x
                     }
 
-
         #Easter eggs
+        print(f"Current area: {current_area} \n Current sub_area: {current_sub_area} \n BOB is at ({bob.rect.x}, {bob.rect.y})")
         if current_area == CAVE and current_sub_area == CAVE_TOP:
-            if easter_egg_one_on == False:
+            if easter_egg_one_finished == False and easter_egg_one_on == False:
                 if scroll_x == 0:
-                    easter_egg_one_timer = pygame.time.get_ticks()
-                    easter_egg_one_on = True
+                    if easter_egg_one_timer is None:
+                        easter_egg_one_timer = pygame.time.get_ticks()
+                    if pygame.time.get_ticks() - easter_egg_one_timer >= 10000:
+                        easter_egg_one_on = True
                 else:
-                    easter_egg_one_timer = 0
+                    easter_egg_one_timer = None
             if easter_egg_one_on == True and easter_egg_one_finished == False and pygame.time.get_ticks() - easter_egg_one_timer >= 10000:
+                print("Starting")
                 easter_egg_one_sfx.play()
                 easter_egg_one.move_ip(-150 * dt, 0)
                 if easter_egg_one.left <= -100:
                     easter_egg_one_sfx.stop()
                     easter_egg_one_finished = True
+                    easter_egg_bob_moving = True
+                    target_x = cave_floor[30].x + 200
+                    target_y = cave_floor[30].top - bob.rect.height
                     start_time = pygame.time.get_ticks() / 1000
                     start_x, start_y = bob.rect.topleft
+                    bob.on_ground = False
+                    bob.velocity_y = 0
+                    easter_egg_one_on = False
 
         #Checkpoints
         for spike in spikes:
