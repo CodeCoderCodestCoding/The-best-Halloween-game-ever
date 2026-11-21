@@ -788,7 +788,7 @@ def level_one():
         pygame.Rect(1800, -500, 400, 400)
     ]
     blargh = pygame.Rect(25, -250, 150, 150)
-    house = [fireplace, tome, dining_table, stove, blargh]
+    house = [fireplace, tome, dining_table, stove, blargh, chicken]
     house.extend(fireplace_chimney + chair + other_chair + floor + ceiling + cupboards + beds + ghosts + other_ghosts)
     basement = [elevator, elevator_floor, breaker_box]
     basement.extend(cobblestone_floor + basement_parkour)
@@ -853,6 +853,7 @@ def level_one():
     chicken_in_oven = True
     chicken_on_stove = False
     chicken_is_cooked = False
+    cooking_start = None
     current_stove_art = stove_closed_art
     lights_on = False
     elevator_moving = False
@@ -955,9 +956,14 @@ def level_one():
 
                     #Stove interaction
                     if bob.rect.colliderect(stove) == True:
-                        current_stove_art = stove_open_art if current_stove_art == stove_closed_art else (stove_cooking_art if current_stove_art == stove_open_art else stove_closed_art)
                         if current_stove_art == stove_open_art and inventory.has("Chicken") == False:
-                            chicken_in_oven = False 
+                            chicken_in_oven = False
+                        elif current_stove_art == stove_cooking_art and inventory.has("Chicken"):
+                            chicken_on_stove = True
+                            inventory.remove("Chicken")
+                        else:
+                            current_stove_art = stove_open_art if current_stove_art == stove_closed_art else (stove_cooking_art if current_stove_art == stove_open_art else stove_closed_art)
+                        
 
                     #Breaker box interaction
                     if bob.rect.colliderect(breaker_box) == True and lights_on == False:
@@ -1077,6 +1083,14 @@ def level_one():
         if ((current_fireplace_art == fireplace_lit_art) ^ (current_stove_art == stove_cooking_art)) and fire_crackling_channel.get_busy() == False:
             fire_crackling_channel.play(fire_crackling_sfx, loops=-1)
 
+        #Chicken on stove
+        if chicken_on_stove == True and cooking_start is None:
+            cooking_start = pygame.time.get_ticks()
+
+        if cooking_start is not None:
+            if pygame.time.get_ticks() - cooking_start >= 60000:
+                chicken_is_cooked = True
+
         #Detects which key was pressed
         key = pygame.key.get_pressed()
 
@@ -1154,7 +1168,7 @@ def level_one():
         if bob.rect.colliderect(lighter) == True and inventory.has("Lighter") == False:
             inventory.add("Lighter")
             lighter_was_in_inventory = True
-        if bob.rect.colliderect(chicken) and inventory.has("Chicken") == False:
+        if chicken_in_oven == False and bob.rect.colliderect(chicken) and inventory.has("Chicken") == False:
             inventory.add("Chicken")
             chicken_was_in_inventory = True
         if bob.rect.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
