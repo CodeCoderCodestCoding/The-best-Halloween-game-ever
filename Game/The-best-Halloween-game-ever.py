@@ -297,6 +297,8 @@ walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking o
 walking_channel = pygame.mixer.Channel(4)
 fire_crackling_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire crackling.mp3")
 fire_crackling_channel = pygame.mixer.Channel(5)
+ready_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Ready!.mp3")
+nomnomnom_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Nom nom nom.mp3")
 fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
 electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 electricity_channel = pygame.mixer.Channel(3)
@@ -782,13 +784,14 @@ def level_one():
     coal = pygame.Rect(5500, 400, 100, 100)
     lighter = pygame.Rect(5500, 300, 11, 45)
     chicken = pygame.Rect(5500, 300, 100, 100)
+    place_chicken_rect = pygame.Rect(4375, 300, 150, 10)
     beds = [
         pygame.Rect(200, -500, 400, 400),
         pygame.Rect(1000, -500, 400, 400),
         pygame.Rect(1800, -500, 400, 400)
     ]
     blargh = pygame.Rect(25, -250, 150, 150)
-    house = [fireplace, tome, dining_table, stove, blargh, chicken]
+    house = [fireplace, tome, dining_table, stove, blargh, chicken, place_chicken_rect]
     house.extend(fireplace_chimney + chair + other_chair + floor + ceiling + cupboards + beds + ghosts + other_ghosts)
     basement = [elevator, elevator_floor, breaker_box]
     basement.extend(cobblestone_floor + basement_parkour)
@@ -849,11 +852,13 @@ def level_one():
     fireplace_state = "Closed"
     previous_fireplace_state = "Closed"
     current_fireplace_art = fireplace_closed_art
-    chicken_was_in_inventory = False
     chicken_in_oven = True
     chicken_on_stove = False
     chicken_is_cooked = False
     cooking_start = None
+    eating_chicken = False
+    can_eat = False
+    eaten = False
     current_stove_art = stove_closed_art
     lights_on = False
     elevator_moving = False
@@ -963,7 +968,12 @@ def level_one():
                             inventory.remove("Chicken")
                         else:
                             current_stove_art = stove_open_art if current_stove_art == stove_closed_art else (stove_cooking_art if current_stove_art == stove_open_art else stove_closed_art)
-                        
+
+                    #Put chicken on the table
+                    if bob.rect.colliderect(place_chicken_rect) == True and chicken_is_cooked == True and inventory.has("Cooked Chicken") == True:
+                        inventory.remove("Cooked Chicken")
+                        chicken.topleft = (dining_table.x + 25, dining_table.y - 100)
+                        can_eat = True
 
                     #Breaker box interaction
                     if bob.rect.colliderect(breaker_box) == True and lights_on == False:
@@ -1086,10 +1096,17 @@ def level_one():
         #Chicken on stove
         if chicken_on_stove == True and cooking_start is None:
             cooking_start = pygame.time.get_ticks()
-
-        if cooking_start is not None:
+        if cooking_start is not None and chicken_is_cooked == False:
             if pygame.time.get_ticks() - cooking_start >= 60000:
                 chicken_is_cooked = True
+                ready_sfx.play()
+
+        #Eating
+        if eating_chicken == True:
+            nomnomnom_sfx.play()
+            eaten = True
+            can_eat = False
+            eating_chicken = False
 
         #Detects which key was pressed
         key = pygame.key.get_pressed()
@@ -1136,6 +1153,7 @@ def level_one():
                     coal.topleft = (2200, 400)
                     lighter.topleft = (2245, 340)
                     chicken.topleft = (1600, 300)
+                    place_chicken_rect.topleft = (1175, 390)
                     fire_alarm_check.topleft = (800, 0)
                     ghosts[0].topleft = (280, 300)
                     ghosts[1].topleft = (1080, 300)
@@ -1168,9 +1186,11 @@ def level_one():
         if bob.rect.colliderect(lighter) == True and inventory.has("Lighter") == False:
             inventory.add("Lighter")
             lighter_was_in_inventory = True
-        if chicken_in_oven == False and bob.rect.colliderect(chicken) and inventory.has("Chicken") == False:
-            inventory.add("Chicken")
-            chicken_was_in_inventory = True
+        if chicken_in_oven == False and bob.rect.colliderect(chicken) == True and inventory.has("Chicken") == False and inventory.has("Cooked Chicken") == False and eaten == False:
+            if chicken_is_cooked == True:
+                inventory.add("Cooked Chicken")
+            else:
+                inventory.add("Chicken")
         if bob.rect.colliderect(fire_alarm_check) == True and fire_alarm_on == False and fireplace_state == "Lit":
             fire_alarm_sfx.play(-1)
             fire_alarm_on = True
@@ -1210,11 +1230,15 @@ def level_one():
                     if not any(future_hitbox.colliderect(rect) for rect in gameplay + balcony + entrance + floor + basement_parkour + [dining_table] + [house_wall_right] + [house_wall_left] + [elevator_floor]):
                         bob.rect.x -= scroll_x
                     if bob.rect.colliderect(move_left_in_house) == True:
+                        if can_eat == True and eaten == False:
+                            eating_chicken = True
                         for rect in house:
                             rect.move_ip(800, 0)
                         for rect in basement:
                             rect.move_ip(800, 0)
                     elif bob.rect.colliderect(move_right_in_house) == True:
+                        if can_eat == True and eaten == False:
+                            eating_chicken = True
                         for rect in house:
                             rect.move_ip(-800, 0)
                         for rect in basement:
@@ -1306,8 +1330,8 @@ def level_one():
                     screen.blit(coal_art, coal.topleft)
                 if inventory.has("Lighter") == False and lighter_was_in_inventory == False:
                     screen.blit(lighter_art, lighter.topleft)
-            if chicken_in_oven == False:
-                if inventory.has("Chicken") == False:
+            if chicken_in_oven == False and eaten == False:
+                if inventory.has("Chicken") == False and inventory.has("Cooked Chicken") == False:
                     if chicken_is_cooked == True:
                         screen.blit(cooked_chicken_art, chicken.topleft)
                     elif chicken_on_stove == True:
