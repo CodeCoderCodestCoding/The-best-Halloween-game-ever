@@ -275,9 +275,12 @@ cave_ceiling_art = pygame.transform.flip(cave_floor_art, False, True)
 cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
 cave_front_extra_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front extra.png")
 spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
+miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
+other_miner_art = pygame.transform.flip(miner_art, True, False)
+exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
 
 #Loading player models and other things that look like the player
-bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
+bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png") 
 crouching_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB_crouch.png")
 spinning_bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
 spinning_bob_angle = 0
@@ -1505,7 +1508,9 @@ def level_two():
         pygame.Rect(9500, 900, 100, 100),
         pygame.Rect(9700, 800, 100, 100),
         pygame.Rect(9800, 850, 100, 100),
-        pygame.Rect(10000, 1000, 100, 100)
+        pygame.Rect(10000, 1000, 100, 100),
+        pygame.Rect(10400, 1000, 100, 100),
+        pygame.Rect(10800, 1000, 100, 100)
     ]
     passable_gameplay = [
         pygame.Rect(1700, 400, 100, 20),
@@ -1531,6 +1536,12 @@ def level_two():
     ]
     gameplay.extend(wall_one)
 
+    wall_two = [
+        pygame.Rect(10300, 1000, 100, 100),
+        pygame.Rect(10300, 900, 100, 100),
+        pygame.Rect(10300, 800, 100, 100)
+    ]
+    gameplay.extend(wall_two)
     cave_front = [
         pygame.Rect(2800, 400, 100, 100),
         pygame.Rect(2900, 400, 100, 100),
@@ -1566,7 +1577,7 @@ def level_two():
     cave_floor.extend(
         [
             pygame.Rect(100*k + 5800, 1100, 100, 100)
-            for k in range(53)
+            for k in range(60)
         ]
     )
     cave_ceiling = [
@@ -1576,7 +1587,7 @@ def level_two():
     cave_ceiling.extend(
         [
             pygame.Rect(100*k + 8800, 650, 100, 100)
-            for k in range(23)
+            for k in range(30)
         ]
     )
     cave_blocks = [
@@ -1592,7 +1603,7 @@ def level_two():
     cave_ceiling_blocks.extend(
         [
             pygame.Rect(100*k + 8800, 550, 100, 100)
-            for k in range(23)
+            for k in range(30)
         ]
     )
     spikes = [
@@ -1614,18 +1625,24 @@ def level_two():
         Spike(9100, 1000, False),
         Spike(9600, 750, True),
         Spike(9700, 900, True),
-        Spike(9800, 950, True)
+        Spike(9800, 950, True),
+        Spike(10500, 1000, False),
+        Spike(10600, 1000, False),
+        Spike (10700, 1000, False)
     ]
+    miner = pygame.Rect(11100, 1000, 100, 100)
+    other_miner = pygame.Rect(11300, 1000, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
     camera_lock = pygame.Rect(5790, 0, 10, 600)
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
+    chase_transition_rect = pygame.Rect(11000, 0, 10, 600)
 
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1727,6 +1744,12 @@ def level_two():
                                     if rect in gameplay:
                                         gameplay.remove(rect)
                                 wall_one.clear()
+
+                            elif k == 2:
+                                for rect in wall_two:
+                                    if rect in gameplay:
+                                        gameplay.remove(rect)
+                                wall_two.clear()
 
                             not_pressed.remove(buttons[k])
                             pressed.append(buttons[k])
@@ -1858,7 +1881,6 @@ def level_two():
                     }
 
         #Easter eggs
-        print(f"Current area: {current_area} \n Current sub_area: {current_sub_area} \n BOB is at ({bob.rect.x}, {bob.rect.y})")
         if current_area == CAVE and current_sub_area == CAVE_TOP:
             if easter_egg_one_finished == False and easter_egg_one_on == False:
                 if scroll_x == 0:
@@ -1869,7 +1891,6 @@ def level_two():
                 else:
                     easter_egg_one_timer = None
             if easter_egg_one_on == True and easter_egg_one_finished == False and pygame.time.get_ticks() - easter_egg_one_timer >= 10000:
-                print("Starting")
                 easter_egg_one_sfx.play()
                 easter_egg_one.move_ip(-150 * dt, 0)
                 if easter_egg_one.left <= -100:
@@ -1923,6 +1944,8 @@ def level_two():
             screen.blit(cave_block_art, rect.topleft)
         for rect in cave_ceiling_blocks:
             screen.blit(upside_down_cave_block_art, rect.topleft)
+        screen.blit(miner_art, miner.topleft)
+        screen.blit(other_miner_art, other_miner.topleft)
         for rect in gameplay:
             if rect.width == 50:
                 screen.blit(small_crate, rect.topleft)
