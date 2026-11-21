@@ -269,7 +269,9 @@ exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png"
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
 cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
+upside_down_cave_block_art = pygame.transform.flip(cave_block_art, False, True)
 cave_floor_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave floor.png")
+cave_ceiling_art = pygame.transform.flip(cave_floor_art, False, True)
 cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
 cave_front_extra_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front extra.png")
 spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
@@ -440,7 +442,7 @@ cave_background_x = 0
 
 #BOB
 class BOB:
-    def __init__(self, x, y):
+    def __init__(self, x: int, y: int):
         # Hitbox
         self.rect = pygame.Rect(x, y, 75, 100)
         self.normal_hitbox_height = 100
@@ -567,19 +569,25 @@ def open_inventory(event):
 
 inventory = Inventory()
 
-#Spike spikes
+#Spikey spikes
 class Spike:
-    def __init__(self, x, y):
+    def __init__(self, x: int, y: int, flipped: bool):
         self.surface = pygame.Surface((100, 100), pygame.SRCALPHA)
+        self.flipped = flipped
 
         pygame.draw.polygon(
             self.surface,
             (255, 255, 255),
-            [(25, 0), (50, 50), (0, 50)]
+            [(100, 0), (100, 100), (0, 100)]
         )
 
+        self.rect = pygame.Rect(33 + x, 62 + y, 34, 46)
+        self.image_rect = self.surface.get_rect(topleft=(x, y))
         self.mask = pygame.mask.from_surface(self.surface)
-        self.rect = self.surface.get_rect(topleft=(x, y))
+
+        if flipped == True:
+            self.surface = pygame.transform.flip(self.surface, False, True)
+            self.rect.y = -8 + y
 
 def level_one():
     global running, dt, raining_channel
@@ -1482,10 +1490,12 @@ def level_two():
         pygame.Rect(1800, 400, 100, 100),
         pygame.Rect(1900, 300, 100, 100),
         pygame.Rect(2100, 400, 100, 100),
-        pygame.Rect(2200, 400, 100, 100)
+        pygame.Rect(2200, 400, 100, 100),
+        pygame.Rect(7000, 1000, 100, 100),
+        pygame.Rect(7475, 1000, 50, 50)
     ]
     passable_gameplay = [
-
+        pygame.Rect(7100, 1000, 100, 20)
     ]
     buttons = [
         pygame.Rect(713, 300, 74, 40),
@@ -1542,13 +1552,26 @@ def level_two():
             for k in range(50)
         ]
     )
-    cave_wall = [
+    cave_ceiling = [
+        pygame.Rect(100*k + 6500, 750, 100, 100)
+        for k in range(23)
+    ]
+    cave_blocks = [
         pygame.Rect(100*i + 5400, 100*j + 600, 100, 100)
         for i in range(4)
         for j in range(6)
     ]
+    cave_ceiling_blocks = [
+        pygame.Rect(100*i + 6500, 100*j + 550, 100, 100)
+        for i in range(23)
+        for j in range(2)
+    ]
     spikes = [
-        Spike(6200, 1000)
+        Spike(6200, 1000, False),
+        Spike(6700, 1000, False),
+        Spike(7000, 850, True),
+        Spike(7400, 1000, False),
+        Spike(7500, 1000, False)
     ]
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
@@ -1559,7 +1582,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect] + [spike.rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1671,7 +1694,7 @@ def level_two():
         #Jumping and gravity
         key = pygame.key.get_pressed()
         collisions = []
-        collisions.extend(gameplay + passable_gameplay + cave_floor + cave_wall)
+        collisions.extend(gameplay + passable_gameplay + cave_floor + cave_ceiling + cave_blocks)
         if cave_front_has_hitox == True:
             collisions.extend(cave_front)
         bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
@@ -1720,7 +1743,7 @@ def level_two():
                             bob.rect.x -= scroll_x
                     else:
                         can_scroll = True
-                        for rect in gameplay + cave_wall + (cave_front if cave_front_has_hitox == True else []):
+                        for rect in gameplay + cave_blocks + (cave_front if cave_front_has_hitox == True else []):
                             future_rect = rect.move(scroll_x, 0)
                             if bob.rect.colliderect(future_rect) == True:
                                 can_scroll = False
@@ -1760,7 +1783,7 @@ def level_two():
             elif falling_phase == 1:
                 alpha_fade(darkness, darkness.get_alpha(), 255, falling_fade_speed)
                 if darkness.get_alpha() >= 255:
-                    for rect in cave_floor + cave_wall + [spike.rect for spike in spikes]:
+                    for rect in world_objects:
                         rect.move_ip(0, -600)
                     camera_shift = 300 - bob.rect.x
                     bob.rect.x += camera_shift
@@ -1804,16 +1827,8 @@ def level_two():
                     start_x, start_y = bob.rect.topleft
 
         #Checkpoints
-        bob_art_current = crouching_art if bob.isCrouching else bob_art
-        bob_mask = pygame.mask.from_surface(bob_art_current)
-        bob_art_x = bob.rect.centerx - bob_art_current.get_width() // 2
-        bob_art_y = bob.rect.bottom - bob_art_current.get_height()
         for spike in spikes:
-            offset = (
-                spike.rect.x - bob_art_x,
-                spike.rect.y - bob_art_y
-            )
-            if bob_mask.overlap(spike.mask, offset) is not None:
+            if bob.rect.colliderect(spike.rect) == True:
                 if checkpoint is not None:
                     bob.rect.topleft = checkpoint["bob_pos"]
                     bob.rect.height = bob.normal_hitbox_height
@@ -1844,8 +1859,12 @@ def level_two():
             screen.blit(cave_front_extra_art, rect.topleft)
         for rect in cave_floor:
             screen.blit(cave_floor_art, rect.topleft)
-        for rect in cave_wall:
+        for rect in cave_ceiling:
+            screen.blit(cave_ceiling_art, rect.topleft)
+        for rect in cave_blocks:
             screen.blit(cave_block_art, rect.topleft)
+        for rect in cave_ceiling_blocks:
+            screen.blit(upside_down_cave_block_art, rect.topleft)
         for rect in gameplay:
             if rect.width == 50:
                 screen.blit(small_crate, rect.topleft)
@@ -1859,7 +1878,10 @@ def level_two():
             elif rect in not_pressed:
                 screen.blit(not_pressed_button_art, rect.topleft)
         for spike in spikes:
-            screen.blit(spike_art, spike.rect.topleft)
+            if spike.flipped == True:
+                screen.blit(pygame.transform.flip(spike_art, False, True), spike.image_rect.topleft)
+            else:
+                screen.blit(spike_art, spike.image_rect.topleft)
 
         #Drawing rain
         if current_area == OUTSIDE:
