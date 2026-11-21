@@ -1492,14 +1492,31 @@ def level_two():
         pygame.Rect(2100, 400, 100, 100),
         pygame.Rect(2200, 400, 100, 100),
         pygame.Rect(7000, 1000, 100, 100),
-        pygame.Rect(7475, 1000, 50, 50)
+        pygame.Rect(7475, 1000, 50, 50),
+        pygame.Rect(7750, 1050, 50, 50),
+        pygame.Rect(7814, 950, 50, 50),
+        pygame.Rect(7938, 950, 50, 50),
+        pygame.Rect(8062, 950, 50, 50),
+        pygame.Rect(8186, 950, 50, 50),
+        pygame.Rect(8300, 1050, 50, 50),
+        pygame.Rect(8750, 1000, 50, 50),
+        pygame.Rect(9000, 900, 100, 100),
+        pygame.Rect(9500, 1000, 100, 100),
+        pygame.Rect(9500, 900, 100, 100),
+        pygame.Rect(9700, 800, 100, 100),
+        pygame.Rect(9800, 850, 100, 100),
+        pygame.Rect(10000, 1000, 100, 100)
     ]
     passable_gameplay = [
-        pygame.Rect(7100, 1000, 100, 20)
+        pygame.Rect(1700, 400, 100, 20),
+        pygame.Rect(7100, 1000, 100, 20),
+        pygame.Rect(9400, 1000, 100, 20),
+        pygame.Rect(10000, 950, 100, 20)
     ]
     buttons = [
         pygame.Rect(713, 300, 74, 40),
-        pygame.Rect(1913, 400, 74, 40)
+        pygame.Rect(1913, 400, 74, 40),
+        pygame.Rect(9813, 750, 74, 40)
     ]
     wall_zero = [
         pygame.Rect(450, 450, 50, 50),
@@ -1529,7 +1546,7 @@ def level_two():
         pygame.Rect(3200, 200, 100, 100),
         pygame.Rect(3100, 100, 100, 100),
         pygame.Rect(3200, 100, 100, 100),
-        pygame.Rect(3200, 0, 100, 100),
+        pygame.Rect(3200, 0, 100, 100)
     ]
     cave_front.extend(
         [
@@ -1549,13 +1566,19 @@ def level_two():
     cave_floor.extend(
         [
             pygame.Rect(100*k + 5800, 1100, 100, 100)
-            for k in range(50)
+            for k in range(53)
         ]
     )
     cave_ceiling = [
         pygame.Rect(100*k + 6500, 750, 100, 100)
         for k in range(23)
     ]
+    cave_ceiling.extend(
+        [
+            pygame.Rect(100*k + 8800, 650, 100, 100)
+            for k in range(23)
+        ]
+    )
     cave_blocks = [
         pygame.Rect(100*i + 5400, 100*j + 600, 100, 100)
         for i in range(4)
@@ -1566,12 +1589,32 @@ def level_two():
         for i in range(23)
         for j in range(2)
     ]
+    cave_ceiling_blocks.extend(
+        [
+            pygame.Rect(100*k + 8800, 550, 100, 100)
+            for k in range(23)
+        ]
+    )
     spikes = [
         Spike(6200, 1000, False),
         Spike(6700, 1000, False),
         Spike(7000, 850, True),
         Spike(7400, 1000, False),
-        Spike(7500, 1000, False)
+        Spike(7500, 1000, False),
+        Spike(7800, 1000, False),
+        Spike(7900, 1000, False),
+        Spike(8000, 1000, False),
+        Spike(8100, 1000, False),
+        Spike(8200, 1000, False),
+        Spike(8600, 1000, False),
+        Spike(8700, 1000, False),
+        Spike(8800, 1000, False),
+        Spike(8900, 1000, False),
+        Spike(9000, 1000, False),
+        Spike(9100, 1000, False),
+        Spike(9600, 750, True),
+        Spike(9700, 900, True),
+        Spike(9800, 950, True)
     ]
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
