@@ -65,6 +65,7 @@ dialogue_font = pygame.font.SysFont("Retro Pixel", 25)
 title_font = pygame.font.SysFont("Retro Pixel", 95)
 text_font = pygame.font.SysFont("Retro Pixel", 30)
 splash_text_font = pygame.font.SysFont("Retro Pixel", 20)
+timer_font = pygame.font.SysFont("Retro Pixel", 50)
 
 title_text_one = title_font.render("THE BEST HALLOWEEN", False, (255, 255, 255))
 title_text_one_rect = title_text_one.get_rect(topleft = (18, 50))
@@ -119,8 +120,9 @@ tome_content_rect = pygame.Rect(25, 25, 750, 550)
 inventory_title = menu_font.render("Inventory", False, (255, 255, 255))
 inventory_title_rect = inventory_title.get_rect(topleft = (350, 50))
 
-def update_splash_text(text, colour, height):
-    return [splash_text_font.render(text, False, colour), splash_text_font.render(text, False, colour).get_rect(topleft = (550, 250 + 30*height))]
+def update_text(font, text, colour, height):
+    rendered_text = font.render(str(text), False, colour)
+    return [rendered_text, rendered_text.get_rect(topleft=(550, 250 + 30*height))]
 
 #Loading background function
 def load_background(image_path, screen_size):
@@ -1508,6 +1510,7 @@ def level_two():
         pygame.Rect(8300, 1050, 50, 50),
         pygame.Rect(8750, 1000, 50, 50),
         pygame.Rect(9000, 900, 100, 100),
+        pygame.Rect(9200, 1000, 100, 100),
         pygame.Rect(9500, 1000, 100, 100),
         pygame.Rect(9500, 900, 100, 100),
         pygame.Rect(9700, 800, 100, 100),
@@ -1636,7 +1639,7 @@ def level_two():
     ]
     miner = pygame.Rect(11100, 1000, 100, 100)
     other_miner = pygame.Rect(11300, 1000, 100, 100)
-    exclamation_mark = pygame.Rect(11100, 975, 100, 100)
+    exclamation_mark = pygame.Rect(11100, 875, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
@@ -1695,7 +1698,7 @@ def level_two():
     timer_two = 0
     in_shock = False
     timer_three = 0
-    timer_four = 0
+    is_being_chased = False
     chase_timer = 0
 
     easter_egg_one_on = False
@@ -1855,7 +1858,7 @@ def level_two():
                 falling_locked = True
                 falling_phase = 0
                 wait_time = pygame.time.get_ticks()
-        if bob.rect.colliderect(chase_transition_rect) == True:
+        if bob.rect.colliderect(chase_transition_rect) == True and is_being_chased == False:
             transitioning = True
 
         # Falling transition
@@ -1920,12 +1923,17 @@ def level_two():
                         transition_stage = 2
 
             elif transition_stage == 2:
+                if chase_timer == 0:
+                    chase_timer = pygame.time.get_ticks()
                 darkness.fill((32, 0, 0))
+                gameplay.pop(32)
+                world_objects.pop(32)
                 checkpoint = {
                     "bob_pos": bob.rect.topleft,
                     "world_positions": [rect.topleft for rect in world_objects],
                     "cave_background_x": cave_background_x
                 }
+                is_being_chased = True
                 transitioning = False
 
         #Easter eggs
@@ -1996,7 +2004,6 @@ def level_two():
         screen.blit(other_miner_art, other_miner.topleft)
         if in_shock == True:
             screen.blit(exclamation_mark_art, exclamation_mark.topleft)
-        pygame.draw.rect(screen, (255, 255, 255), chase_transition_rect)
         for rect in gameplay:
             if rect.width == 50:
                 screen.blit(small_crate, rect.topleft)
@@ -2025,6 +2032,9 @@ def level_two():
         screen.blit(darkness, (0, 0))
 
         screen.blit(other_ghost_art, easter_egg_one.topleft)
+
+        if is_being_chased == True:
+            screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
 
         draw_inventory()
 
@@ -2202,24 +2212,24 @@ def main_menu():
         screen.blit(scaled_button, scaled_rect)
 
         if chance == 1000000000:
-            screen.blit(update_splash_text("If you are reading this", (255, 255, 255), 0)[0], update_splash_text("If you are reading this", (255, 255, 255), 0)[1])
-            screen.blit(update_splash_text("You should buy some lottery tickets", (255, 255, 255), 1)[0], update_splash_text("You should buy some lottery tickets", (255, 255, 255), 1)[1])
+            screen.blit(update_text(splash_text_font, "If you are reading this", (255, 255, 255), 0)[0], update_text(splash_text_font, "If you are reading this", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "You should buy some lottery tickets", (255, 255, 255), 1)[0], update_text(splash_text_font, "You should buy some lottery tickets", (255, 255, 255), 1)[1])
         elif chance >= 999999000:
-            screen.blit(update_splash_text("TheChickenIsOnFire", (255, 255, 255), 0)[0], update_splash_text("TheChickenIsOnFire", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "TheChickenIsOnFire", (255, 255, 255), 0)[0], update_text(splash_text_font, "TheChickenIsOnFire", (255, 255, 255), 0)[1])
         elif chance >= 999000000:
-            screen.blit(update_splash_text("This is the third rarest message", (255, 255, 255), 0)[0], update_splash_text("This is the third rarest message", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "This is the third rarest message", (255, 255, 255), 0)[0], update_text(splash_text_font, "This is the third rarest message", (255, 255, 255), 0)[1])
         elif chance >= 990000000:
-            screen.blit(update_splash_text("Top 1% of people", (255, 255, 255), 0)[0], update_splash_text("Top 1% of people", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "Top 1% of people", (255, 255, 255), 0)[0], update_text(splash_text_font, "Top 1% of people", (255, 255, 255), 0)[1])
         elif chance >= 900000000:
-            screen.blit(update_splash_text("This is NOT a Nintendo game", (255, 255, 255), 0)[0], update_splash_text("This is NOT a Nintendo game", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "This is NOT a Nintendo game", (255, 255, 255), 0)[0], update_text(splash_text_font, "This is NOT a Nintendo game", (255, 255, 255), 0)[1])
         elif chance >= 700000000:
-            screen.blit(update_splash_text("Say hi to BOB.", (255, 255, 255), 0)[0], update_splash_text("Say hi to BOB.", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "Say hi to BOB.", (255, 255, 255), 0)[0], update_text(splash_text_font, "Say hi to BOB.", (255, 255, 255), 0)[1])
         elif chance >= 400000000:
-            screen.blit(update_splash_text("The cake is a lie", (255, 255, 255), 0)[0], update_splash_text("The cake is a lie", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "The cake is a lie", (255, 255, 255), 0)[0], update_text(splash_text_font, "The cake is a lie", (255, 255, 255), 0)[1])
         else:
-            screen.blit(update_splash_text("This is the default message", (255, 255, 255), 0)[0], update_splash_text("This is the default message", (255, 255, 255), 0)[1])
-            screen.blit(update_splash_text("40% chance of getting this", (255, 255, 255), 1)[0], update_splash_text("40% chance of getting this", (255, 255, 255), 1)[1])
-            screen.blit(update_splash_text("Gourmet Race", (255, 255, 255), 2)[0], update_splash_text("Gourmet Race", (255, 255, 255), 2)[1])
+            screen.blit(update_text(splash_text_font, "This is the default message", (255, 255, 255), 0)[0], update_text(splash_text_font, "This is the default message", (255, 255, 255), 0)[1])
+            screen.blit(update_text(splash_text_font, "40% chance of getting this", (255, 255, 255), 1)[0], update_text(splash_text_font, "40% chance of getting this", (255, 255, 255), 1)[1])
+            screen.blit(update_text(splash_text_font, "Gourmet Race", (255, 255, 255), 2)[0], update_text(splash_text_font, "Gourmet Race", (255, 255, 255), 2)[1])
 
         if level_select_open == True:
             level_select(events)
