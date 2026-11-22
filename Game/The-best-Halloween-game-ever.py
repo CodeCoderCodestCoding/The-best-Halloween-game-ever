@@ -462,9 +462,9 @@ class BOB:
         # Artwork
         self.art = bob_art
 
-    def movement(self, dt, key, collisions, transitioning, game_paused, current_area):
+    def movement(self, dt, key, collisions, game_paused, current_area):
 
-        if transitioning == True or game_paused == True:
+        if game_paused == True:
             return
 
         # Crouching
@@ -1124,7 +1124,7 @@ def level_one():
 
         collisions = (gameplay + passable_gameplay + balcony + floor + ceiling + cobblestone_floor + basement_parkour + [dining_table, elevator_floor])
 
-        bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
+        bob.movement(dt, key, collisions, game_paused, current_area)
 
         #Object interactions
         if bob.rect.colliderect(camera_change) == True:
@@ -1470,7 +1470,11 @@ def level_one():
 
 #Level 2
 def level_two():
-    global running, dt, settings, transitioning, game_paused, settings_open, outside, inventory_open, inventory_surface, inventory_rect, outside_background_x, cave_background_x, bob, Spike, current_sub_area
+    global running, dt, transitioning
+    global outside, outside_background_x, cave_background_x, miner_art
+    global settings, settings_open
+    global game_paused, inventory_open, inventory_surface, inventory_rect, current_sub_area
+    global bob, Spike
 
     #Objects
     gameplay = [
@@ -1632,17 +1636,18 @@ def level_two():
     ]
     miner = pygame.Rect(11100, 1000, 100, 100)
     other_miner = pygame.Rect(11300, 1000, 100, 100)
+    exclamation_mark = pygame.Rect(11100, 975, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
     camera_lock = pygame.Rect(5790, 0, 10, 600)
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
-    chase_transition_rect = pygame.Rect(11000, 0, 10, 600)
+    chase_transition_rect = pygame.Rect(11000, 600, 10, 600)
 
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1685,6 +1690,13 @@ def level_two():
     falling_locked = False
     falling_phase = 0
     falling_fade_speed = 240
+    transition_stage = 0
+    timer_one = 0
+    timer_two = 0
+    in_shock = False
+    timer_three = 0
+    timer_four = 0
+    chase_timer = 0
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
@@ -1763,7 +1775,7 @@ def level_two():
         collisions.extend(gameplay + passable_gameplay + cave_floor + cave_ceiling + cave_blocks)
         if cave_front_has_hitox == True:
             collisions.extend(cave_front)
-        bob.movement(dt, key, collisions, transitioning, game_paused, current_area)
+        bob.movement(dt, key, collisions, game_paused, current_area)
 
         if easter_egg_bob_moving == True:
             current_time = pygame.time.get_ticks() / 1000
@@ -1843,6 +1855,8 @@ def level_two():
                 falling_locked = True
                 falling_phase = 0
                 wait_time = pygame.time.get_ticks()
+        if bob.rect.colliderect(chase_transition_rect) == True:
+            transitioning = True
 
         # Falling transition
         if falling_locked == True:
@@ -1879,6 +1893,40 @@ def level_two():
                         "world_positions": [rect.topleft for rect in world_objects],
                         "cave_background_x": cave_background_x
                     }
+
+        #Chase transition
+        if transitioning == True:
+            
+            if pygame.mixer.music.get_busy() == False:
+                pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Chase music.mp3")
+                pygame.mixer.music.play(-1)
+
+            if transition_stage == 0:
+                if timer_one == 0:
+                    timer_one = pygame.time.get_ticks()
+                if pygame.time.get_ticks() - timer_one >= 3000:
+                    transition_stage = 1
+
+            elif transition_stage == 1:
+                miner_art = other_miner_art
+                if timer_two == 0:
+                    timer_two = pygame.time.get_ticks()
+                if pygame.time.get_ticks() - timer_two >= 500:
+                    in_shock = True
+                    if timer_three == 0:
+                        timer_three = pygame.time.get_ticks()
+                    if pygame.time.get_ticks() - timer_three >= 1000:
+                        in_shock = False
+                        transition_stage = 2
+
+            elif transition_stage == 2:
+                darkness.fill((32, 0, 0))
+                checkpoint = {
+                    "bob_pos": bob.rect.topleft,
+                    "world_positions": [rect.topleft for rect in world_objects],
+                    "cave_background_x": cave_background_x
+                }
+                transitioning = False
 
         #Easter eggs
         if current_area == CAVE and current_sub_area == CAVE_TOP:
@@ -1946,6 +1994,9 @@ def level_two():
             screen.blit(upside_down_cave_block_art, rect.topleft)
         screen.blit(miner_art, miner.topleft)
         screen.blit(other_miner_art, other_miner.topleft)
+        if in_shock == True:
+            screen.blit(exclamation_mark_art, exclamation_mark.topleft)
+        pygame.draw.rect(screen, (255, 255, 255), chase_transition_rect)
         for rect in gameplay:
             if rect.width == 50:
                 screen.blit(small_crate, rect.topleft)
