@@ -33,6 +33,8 @@ Run the Python script from your terminal:
 
 python "The-best-Halloween-game-ever.py"
 
+Or just run the executable from your file explorer.
+
 Controls
 Key	Action
 A	Move left
@@ -42,13 +44,12 @@ S	Crouch
 F   Interact
 E   Open inventory
 
-Or alternatively, download the .zip file, extract all the files and then run the application file.
-
 Gameplay
 
 Explore the level by jumping between platforms and navigating obstacles.
 
-As you progress, the environment changes to include rain and lightning. To escape the bad weather, you enter a house, but the balcony collapses down behind you. You are trapped in this house, and you must find a way to escape.
+Chapter One focuses on your problem solving skills by trapping you in a haunted house, and you must use the Tome of Knowledge to discover the way out.
+Chapter Two focuses on your gameplay skills, taking the style from Chapter One and making it harder with more obstacles, more buttons and the omnipotent Spike. Some say it wields the power to end the player's life. But not enough power to keep him dead, he'll just respawn...
 
 Technologies Used
 Python — Main programming language.
@@ -59,6 +60,6 @@ Credits
 
 Developed using Python, Pygame, and Pillow.
 
-All artwork was created by me. All sound effects came from Pixabay
+All artwork was created by me. All sound effects and music that don't specify a source came from Pixabay.
 
-This README was updated by me, because I'm getting better at this kind of thing
+This README was updated by me, because I'm getting better at this kind of thing (I think).
