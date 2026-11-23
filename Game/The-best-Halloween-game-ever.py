@@ -280,6 +280,7 @@ spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
 miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
 other_miner_art = pygame.transform.flip(miner_art, True, False)
 exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
+pygame.set_icon(ghost_art)
 
 #Loading player models and other things that look like the player
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png") 
