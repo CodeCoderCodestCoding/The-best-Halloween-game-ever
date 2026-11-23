@@ -1638,7 +1638,9 @@ def level_two():
         Spike (10700, 1000, False)
     ]
     miner = pygame.Rect(11100, 1000, 100, 100)
+    miner_vector = pygame.Vector2(miner.topleft)
     other_miner = pygame.Rect(11300, 1000, 100, 100)
+    other_miner_vector = pygame.Vector2(other_miner.topleft)
     exclamation_mark = pygame.Rect(11100, 875, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
@@ -1677,6 +1679,7 @@ def level_two():
 
     #BOB
     bob = BOB(300, 400)
+    target = pygame.Vector2(bob.rect.center)
 
     #Pre main loop variables
     checkpoint = None
@@ -1836,6 +1839,8 @@ def level_two():
                         if can_scroll == True:
                             for rect in world_objects:
                                 rect.move_ip(scroll_x, 0)
+                            miner_vector.x += scroll_x
+                            other_miner_vector.x += scroll_x
                             actual_scroll_x = scroll_x
 
         #Collisions that trigger things
@@ -1873,6 +1878,8 @@ def level_two():
                 if darkness.get_alpha() >= 255:
                     for rect in world_objects:
                         rect.move_ip(0, -600)
+                    miner_vector.y -= 600
+                    other_miner_vector.y -= 600
                     camera_shift = 300 - cave_floor[31].x
                     bob.rect.x = 300
                     bob.rect.y = 400
@@ -1881,6 +1888,8 @@ def level_two():
                     bob.on_ground = True
                     for rect in world_objects:
                         rect.x += camera_shift
+                    miner_vector.x += camera_shift
+                    other_miner_vector.x += camera_shift
                     falling_phase = 2
 
             elif falling_phase == 2:
@@ -1962,22 +1971,22 @@ def level_two():
                     easter_egg_one_on = False
 
         #Checkpoints
-        for spike in spikes:
-            if bob.rect.colliderect(spike.rect) == True:
-                if checkpoint is not None:
-                    bob.rect.topleft = checkpoint["bob_pos"]
-                    bob.rect.height = bob.normal_hitbox_height
-                    bob.y = float(bob.rect.y)
-                    bob.velocity_y = 0
-                    bob.on_ground = True
-                    bob.isCrouching = False
-                    for rect, pos in zip(world_objects, checkpoint["world_positions"]):
-                        rect.topleft = pos
-                    cave_background_x = checkpoint["cave_background_x"]
-                    camera_locked = False
-                    falling_locked = False
-                    falling_phase = 0
-                break
+        if any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or bob.rect.colliderect(miner) == True or bob.rect.colliderect(other_miner) == True:
+            if checkpoint is not None:
+                bob.rect.topleft = checkpoint["bob_pos"]
+                bob.rect.height = bob.normal_hitbox_height
+                bob.y = float(bob.rect.y)
+                bob.velocity_y = 0
+                bob.on_ground = True
+                bob.isCrouching = False
+                for rect, pos in zip(world_objects, checkpoint["world_positions"]):
+                    rect.topleft = pos
+                cave_background_x = checkpoint["cave_background_x"]
+                camera_locked = False
+                falling_locked = False
+                falling_phase = 0
+                miner_vector = pygame.Vector2(miner.topleft)
+                other_miner_vector = pygame.Vector2(other_miner.topleft)
 
         #Drawing screen
         outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
@@ -2034,6 +2043,11 @@ def level_two():
         screen.blit(other_ghost_art, easter_egg_one.topleft)
 
         if is_being_chased == True:
+            target = pygame.Vector2(bob.rect.center)
+            miner_vector = miner_vector.move_towards(target, 300 * dt)
+            miner.topleft = round(miner_vector.x), round(miner_vector.y)
+            other_miner_vector = other_miner_vector.move_towards(target, 300 * dt)
+            other_miner.topleft = round(other_miner_vector.x), round(other_miner_vector.y)
             screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
 
         draw_inventory()
