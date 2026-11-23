@@ -60,6 +60,6 @@ Technologies Used
 
 Developed using Python, Pygame, and Pillow.
 
-All artwork was created by me. All sound effects and music that don't specify a source came from Pixabay.
+All artwork was created by me (except for Blargh). All sound effects and music that don't specify a source came from Pixabay.
 
 I'm getting better at this...
