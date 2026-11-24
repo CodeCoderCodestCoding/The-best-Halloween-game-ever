@@ -278,9 +278,11 @@ cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
 cave_front_extra_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front extra.png")
 spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
 miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
+miner_art.set_alpha(200)
 other_miner_art = pygame.transform.flip(miner_art, True, False)
+other_miner_art.set_alpha(200)
 exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
-pygame.set_icon(ghost_art)
+pygame.display.set_icon(ghost_art)
 
 #Loading player models and other things that look like the player
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png") 
@@ -1479,6 +1481,15 @@ def level_two():
     global game_paused, inventory_open, inventory_surface, inventory_rect, current_sub_area
     global bob, Spike
 
+    #Functions
+    def bobbing(rect, start_y, end_y, speed, direction):
+        if rect.y <= end_y:
+            direction = 1
+        elif rect.y >= start_y:
+            direction = -1
+        rect.move_ip(0, direction * speed * dt)
+        return direction
+
     #Objects
     gameplay = [
         pygame.Rect(500, 400, 50, 50),
@@ -1697,6 +1708,7 @@ def level_two():
     falling_locked = False
     falling_phase = 0
     falling_fade_speed = 240
+    miner_direction, other_miner_direction = -1, -1
     transition_stage = 0
     timer_one = 0
     timer_two = 0
@@ -1915,6 +1927,8 @@ def level_two():
                 pygame.mixer.music.play(-1)
 
             if transition_stage == 0:
+                miner.topleft = (390, miner.left)
+                other_miner.topleft = (390, other_miner.left)
                 if timer_one == 0:
                     timer_one = pygame.time.get_ticks()
                 if pygame.time.get_ticks() - timer_one >= 3000:
@@ -2012,6 +2026,9 @@ def level_two():
             screen.blit(upside_down_cave_block_art, rect.topleft)
         screen.blit(miner_art, miner.topleft)
         screen.blit(other_miner_art, other_miner.topleft)
+        if current_sub_area == CAVE_BOTTOM and transition_stage == 0 and is_being_chased == False:
+            miner_direction = bobbing(miner, 390, 290, 300, miner_direction)
+            other_miner_direction = bobbing(other_miner, 390, 290, 300, other_miner_direction)
         if in_shock == True:
             screen.blit(exclamation_mark_art, exclamation_mark.topleft)
         for rect in gameplay:
@@ -2102,24 +2119,24 @@ def level_select(events):
     for event in events:
         if event.type == pygame.MOUSEBUTTONDOWN:
             cursor_pos = pygame.mouse.get_pos()
-            if level_one_rect.collidepoint(cursor_pos) == True:
-                pygame.mixer.music.stop()
-                level_one()
-                if running:
-                    pygame.mixer.music.play(-1)
-                return
-            elif level_two_rect.collidepoint(cursor_pos) == True:
-                if levels_unlocked["Chapter 2"] == True:
+            if level_menu_just_opened == False:
+                if level_one_rect.collidepoint(cursor_pos) == True:
                     pygame.mixer.music.stop()
-                    level_two()
+                    level_one()
                     if running:
                         pygame.mixer.music.play(-1)
                     return
-            else:
-                if level_menu_just_opened == False:
-                    level_select_open = False
+                elif level_two_rect.collidepoint(cursor_pos) == True:
+                    if levels_unlocked["Chapter 2"] == True:
+                        pygame.mixer.music.stop()
+                        level_two()
+                        if running:
+                            pygame.mixer.music.play(-1)
+                        return
                 else:
-                    level_menu_just_opened = False
+                    level_select_open = False
+            else:
+                level_menu_just_opened = False
     
     screen.blit(level_menu, level_menu_rect.topleft)
     pygame.draw.rect(screen, (255, 255, 255), level_menu_rect, 3)
