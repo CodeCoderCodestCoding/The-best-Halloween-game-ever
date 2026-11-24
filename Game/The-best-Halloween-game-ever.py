@@ -6,6 +6,7 @@ import sys
 import json
 import os
 import random
+import math
 import pygame
 
 #Initialisation
@@ -282,6 +283,8 @@ miner_art.set_alpha(200)
 other_miner_art = pygame.transform.flip(miner_art, True, False)
 other_miner_art.set_alpha(200)
 exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
+employment_art = load_art(ASSETS_DIR / "Art" / "Objects" / "EMPLOYMENT.png")
+employment_art = pygame.transform.rotate(employment_art, 90)
 pygame.display.set_icon(ghost_art)
 
 #Loading player models and other things that look like the player
@@ -314,6 +317,7 @@ electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3"
 electricity_channel = pygame.mixer.Channel(3)
 easter_egg_one_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Easter egg one.mp3")
 running_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Running.mp3")
+yay_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Yay.mp3")
 
 #Settings
 pause_menu = pygame.Surface((750, 550))
@@ -596,6 +600,53 @@ class Spike:
         if flipped == True:
             self.surface = pygame.transform.flip(self.surface, False, True)
             self.rect.y = -8 + y
+
+#Death animation
+class DisintegrationParticle:
+    def __init__(self, image, x, y):
+        self.image = image
+        self.x = x
+        self.y = y
+        angle = random.uniform(0, math.tau)
+        speed = random.uniform(30, 150)
+        self.vx = math.cos(angle) * speed
+        self.vy = math.sin(angle) * speed
+        self.lifetime = random.uniform(0.3, 0.6)
+        self.age = 0
+
+    def update(self, dt):
+        self.age += dt
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.vy -= 25 * dt
+    def draw(self, screen):
+        if self.age >= self.lifetime:
+            return
+        opacity = int(255 * (1 - self.age / self.lifetime))
+        self.image.set_alpha(opacity)
+        screen.blit(self.image, (self.x, self.y))
+def create_disintegration(image, position):
+    particles = []
+    pixel_size = 4
+    for y in range(0, image.get_height(), pixel_size):
+        for x in range(0, image.get_width(), pixel_size):
+            width = min(pixel_size, image.get_width() - x)
+            height = min(pixel_size, image.get_height() - y)
+            block = pygame.Surface(
+                (width, height),
+                pygame.SRCALPHA
+            )
+            block.blit(image, (0, 0), (x, y, width, height))
+            if block.get_bounding_rect().width == 0:
+                continue
+            particles.append(
+                DisintegrationParticle(
+                    block,
+                    position[0] + x,
+                    position[1] + y,
+                )
+            )
+    return particles
 
 def level_one():
     global running, dt, raining_channel
@@ -1654,6 +1705,7 @@ def level_two():
     other_miner = pygame.Rect(11300, 1000, 100, 100)
     other_miner_vector = pygame.Vector2(other_miner.topleft)
     exclamation_mark = pygame.Rect(11100, 875, 100, 100)
+    employment = pygame.Rect(6500, 850, 40, 250)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
@@ -1664,7 +1716,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1716,6 +1768,11 @@ def level_two():
     timer_three = 0
     is_being_chased = False
     chase_timer = 0
+    end_chase = False
+    miner_dead = False
+    miner_particles = []
+    other_miner_dead = False
+    other_miner_particles = []
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
@@ -1878,6 +1935,8 @@ def level_two():
                 wait_time = pygame.time.get_ticks()
         if bob.rect.colliderect(chase_transition_rect) == True and is_being_chased == False:
             transitioning = True
+        if bob.rect.colliderect(employment) == True and is_being_chased == True:
+            end_chase = True
 
         # Falling transition
         if falling_locked == True:
@@ -1927,8 +1986,10 @@ def level_two():
                 pygame.mixer.music.play(-1)
 
             if transition_stage == 0:
-                miner.topleft = (390, miner.left)
-                other_miner.topleft = (390, other_miner.left)
+                miner.topleft = (miner.left, 390)
+                other_miner.topleft = (other_miner.left, 390)
+                miner_vector = pygame.Vector2(miner.topleft)
+                other_miner_vector = pygame.Vector2(other_miner.topleft)
                 if timer_one == 0:
                     timer_one = pygame.time.get_ticks()
                 if pygame.time.get_ticks() - timer_one >= 3000:
@@ -1960,6 +2021,19 @@ def level_two():
                 is_being_chased = True
                 transitioning = False
 
+        #End chase
+        if end_chase == True:
+            if miner.colliderect(employment) == True and miner_dead == False:
+                miner_particles = create_disintegration(miner_art, miner.topleft)
+                miner_dead = True
+            if other_miner.colliderect(employment) and other_miner_dead == False:
+                other_miner_particles = create_disintegration(other_miner_art, other_miner.topleft)
+                other_miner_dead = True
+
+        if miner_dead == True and other_miner_dead == True:
+            is_being_chased = False
+            darkness.fill((0, 0, 0))
+
         #Easter eggs
         if current_area == CAVE and current_sub_area == CAVE_TOP:
             if easter_egg_one_finished == False and easter_egg_one_on == False:
@@ -1986,7 +2060,7 @@ def level_two():
                     easter_egg_one_on = False
 
         #Checkpoints
-        if any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or bob.rect.colliderect(miner) == True or bob.rect.colliderect(other_miner) == True:
+        if any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or (bob.rect.colliderect(miner) == True and miner_dead == False) or (bob.rect.colliderect(other_miner) == True and other_miner_dead == False):
             if checkpoint is not None:
                 bob.rect.topleft = checkpoint["bob_pos"]
                 bob.rect.height = bob.normal_hitbox_height
@@ -2024,8 +2098,26 @@ def level_two():
             screen.blit(cave_block_art, rect.topleft)
         for rect in cave_ceiling_blocks:
             screen.blit(upside_down_cave_block_art, rect.topleft)
-        screen.blit(miner_art, miner.topleft)
-        screen.blit(other_miner_art, other_miner.topleft)
+        if miner_dead == True:
+            for particle in miner_particles:
+                particle.update(dt)
+                particle.draw(screen)
+            miner_particles = [
+                p for p in miner_particles
+                if p.age < p.lifetime
+            ]
+        else:
+            screen.blit(miner_art, miner.topleft)
+        if other_miner_dead == True:
+            for particle in other_miner_particles:
+                particle.update(dt)
+                particle.draw(screen)
+            other_miner_particles = [
+                p for p in other_miner_particles
+                if p.age < p.lifetime
+            ]
+        else:
+            screen.blit(other_miner_art, other_miner.topleft)
         if current_sub_area == CAVE_BOTTOM and transition_stage == 0 and is_being_chased == False:
             miner_direction = bobbing(miner, 390, 290, 300, miner_direction)
             other_miner_direction = bobbing(other_miner, 390, 290, 300, other_miner_direction)
@@ -2062,11 +2154,15 @@ def level_two():
 
         if is_being_chased == True:
             target = pygame.Vector2(bob.rect.center)
-            miner_vector = miner_vector.move_towards(target, 300 * dt)
-            miner.topleft = round(miner_vector.x), round(miner_vector.y)
-            other_miner_vector = other_miner_vector.move_towards(target, 300 * dt)
-            other_miner.topleft = round(other_miner_vector.x), round(other_miner_vector.y)
+            if miner_dead == False:
+                miner_vector = miner_vector.move_towards(target, 300 * dt)
+                miner.topleft = round(miner_vector.x), round(miner_vector.y)
+            if other_miner_dead == False:
+                other_miner_vector = other_miner_vector.move_towards(target, 300 * dt)
+                other_miner.topleft = round(other_miner_vector.x), round(other_miner_vector.y)
+            
             screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
+            screen.blit(employment_art, employment.topleft)
 
         draw_inventory()
 
