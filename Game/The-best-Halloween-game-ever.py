@@ -272,6 +272,7 @@ exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png"
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
 cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
+cave_block_wall_art = cave_block_art.copy()
 upside_down_cave_block_art = pygame.transform.flip(cave_block_art, False, True)
 cave_floor_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave floor.png")
 cave_ceiling_art = pygame.transform.flip(cave_floor_art, False, True)
@@ -322,6 +323,8 @@ electricity_channel = pygame.mixer.Channel(3)
 easter_egg_one_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Easter egg one.mp3")
 running_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Running.mp3")
 yay_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Yay.mp3")
+hiss_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Hiss.mp3")
+explosion_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Explosion.mp3")
 
 #Settings
 pause_menu = pygame.Surface((750, 550))
@@ -648,6 +651,48 @@ def create_disintegration(image, position):
                     block,
                     position[0] + x,
                     position[1] + y,
+                )
+            )
+    return particles
+
+#Explosion animation
+class Debris:
+    def __init__(self, x, y, image):
+        self.image = image
+        self.x = x
+        self.y = y
+        angle = random.uniform(0, math.tau)
+        speed = random.uniform(100, 350)
+        self.vx = math.cos(angle) * speed
+        self.vy = math.sin(angle) * speed - 150
+        self.gravity = 700
+        self.lifetime = random.uniform(0.5, 1.2)
+        self.age = 0
+
+    def update(self, dt):
+        self.age += dt
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.vy += self.gravity * dt
+
+    def draw(self, screen):
+        if self.age < self.lifetime:
+            screen.blit(self.image, (self.x, self.y))
+def create_debris(image, position, pixel_size=4):
+    particles = []
+    for y in range(0, image.get_height(), pixel_size):
+        for x in range(0, image.get_width(), pixel_size):
+            width = min(pixel_size, image.get_width() - x)
+            height = min(pixel_size, image.get_height() - y)
+            block = pygame.Surface((width, height), pygame.SRCALPHA)
+            block.blit(image, (0, 0), (x, y, width, height))
+            if block.get_bounding_rect().width == 0:
+                continue
+            particles.append(
+                Debris(
+                    position[0] + x,
+                    position[1] + y,
+                    block
                 )
             )
     return particles
@@ -1669,14 +1714,13 @@ def level_two():
         for i in range(4)
         for j in range(6)
     ]
-    cave_blocks.extend(
-        [
-            pygame.Rect(100*i + 11500, 100*j + 600, 100, 100)
-            for i in range(4)
-            for j in range(6)
-            if i != 0 or j != 4
-        ]
-    )
+    cave_blocks_wall = [
+        pygame.Rect(100*i + 11500, 100*j + 600, 100, 100)
+        for i in range(4)
+        for j in range(6)
+        if i != 0 or j != 4
+    ]
+    
     cave_ceiling_blocks = [
         pygame.Rect(100*i + 6500, 100*j + 550, 100, 100)
         for i in range(23)
@@ -1731,7 +1775,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1789,6 +1833,10 @@ def level_two():
     other_miner_dead = False
     other_miner_particles = []
     chase_over = False
+    exploding = False
+    exploded = False
+    explosion_time = None
+    debris_particles = []
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
@@ -1861,16 +1909,19 @@ def level_two():
                             break
 
                     #If an item is placed
-                    if inventory.has("Dynamite") == True:
-                        if cave_blocks[24].left - bob.rect.right <= 150:
+                    if cave_blocks_wall[0].left - bob.rect.right <= 150:
+                        if inventory.has("Dynamite") == True:
                             dynamite.topleft = dynamite_outline.topleft
                             inventory.remove("Dynamite")
-
+                        elif inventory.has("Flint and steel") == True and dynamite.topleft == dynamite_outline.topleft:
+                            hiss_sfx.play()
+                            explosion_time = pygame.time.get_ticks() + hiss_sfx.get_length() * 1000
+                            inventory.remove("Flint and steel")
 
         #Jumping and gravity
         key = pygame.key.get_pressed()
         collisions = []
-        collisions.extend(gameplay + passable_gameplay + cave_floor + cave_ceiling + cave_blocks)
+        collisions.extend(gameplay + passable_gameplay + cave_floor + cave_ceiling + cave_blocks + cave_blocks_wall)
         if cave_front_has_hitox == True:
             collisions.extend(cave_front)
         bob.movement(dt, key, collisions, game_paused, current_area)
@@ -2069,6 +2120,31 @@ def level_two():
             }
             chase_over = True
 
+        #Explosion
+        if explosion_time is not None:
+            if pygame.time.get_ticks() >= explosion_time:
+                explosion_sfx.play()
+                exploding = True
+                explosion_time = None
+        if exploding == True:
+            for rect in cave_blocks_wall:
+                debris_particles.extend(
+                    create_debris(cave_block_wall_art, rect.topleft)
+                )
+            for rect in cave_blocks_wall:
+                if rect in world_objects:
+                    world_objects.remove(rect)
+                if rect in collisions:
+                    collisions.remove(rect)
+            cave_blocks_wall.clear()
+            for rect in [dynamite, dynamite_outline]:
+                if rect in world_objects:
+                    world_objects.remove(rect)
+                if rect in collisions:
+                    collisions.remove(rect)
+            exploding = False
+            exploded = True
+
         #Easter eggs
         if current_area == CAVE and current_sub_area == CAVE_TOP:
             if easter_egg_one_finished == False and easter_egg_one_on == False:
@@ -2153,6 +2229,17 @@ def level_two():
             ]
         else:
             screen.blit(other_miner_art, other_miner.topleft)
+        if debris_particles or exploded == True:
+            for particle in debris_particles:
+                particle.update(dt)
+                particle.draw(screen)
+            debris_particles = [
+                p for p in debris_particles
+                if p.age < p.lifetime
+            ]
+        else:
+            for rect in cave_blocks_wall:
+                screen.blit(cave_block_wall_art, rect.topleft)
         if current_sub_area == CAVE_BOTTOM and transition_stage == 0 and is_being_chased == False:
             miner_direction = bobbing(miner, 390, 290, 300, miner_direction)
             other_miner_direction = bobbing(other_miner, 390, 290, 300, other_miner_direction)
