@@ -285,6 +285,10 @@ other_miner_art.set_alpha(200)
 exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
 employment_art = load_art(ASSETS_DIR / "Art" / "Objects" / "EMPLOYMENT.png")
 employment_art = pygame.transform.rotate(employment_art, 90)
+dynamite_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dynamite.png")
+dynamite_outline_art = dynamite_art.copy()
+dynamite_outline_art.set_alpha(64)
+flint_and_steel_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Flint and steel.png") #Design borrowed from Minecraft
 pygame.display.set_icon(ghost_art)
 
 #Loading player models and other things that look like the player
@@ -1665,6 +1669,14 @@ def level_two():
         for i in range(4)
         for j in range(6)
     ]
+    cave_blocks.extend(
+        [
+            pygame.Rect(100*i + 11500, 100*j + 600, 100, 100)
+            for i in range(4)
+            for j in range(6)
+            if i != 0 or j != 4
+        ]
+    )
     cave_ceiling_blocks = [
         pygame.Rect(100*i + 6500, 100*j + 550, 100, 100)
         for i in range(23)
@@ -1706,6 +1718,9 @@ def level_two():
     other_miner_vector = pygame.Vector2(other_miner.topleft)
     exclamation_mark = pygame.Rect(11100, 875, 100, 100)
     employment = pygame.Rect(6500, 850, 40, 250)
+    dynamite = pygame.Rect(5900, 1000, 100, 100)
+    dynamite_outline = pygame.Rect(11500, 1000, 100, 100)
+    flint_and_steel = pygame.Rect(9800, 750, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
@@ -1716,7 +1731,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1773,6 +1788,7 @@ def level_two():
     miner_particles = []
     other_miner_dead = False
     other_miner_particles = []
+    chase_over = False
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
@@ -1843,6 +1859,12 @@ def level_two():
                             pressed.append(buttons[k])
                             click_sfx.play()
                             break
+
+                    #If an item is placed
+                    if inventory.has("Dynamite") == True:
+                        if cave_blocks[24].left - bob.rect.right <= 150:
+                            dynamite.topleft = dynamite_outline.topleft
+                            inventory.remove("Dynamite")
 
 
         #Jumping and gravity
@@ -1933,10 +1955,15 @@ def level_two():
                 falling_locked = True
                 falling_phase = 0
                 wait_time = pygame.time.get_ticks()
-        if bob.rect.colliderect(chase_transition_rect) == True and is_being_chased == False:
+        if bob.rect.colliderect(chase_transition_rect) == True and is_being_chased == False and chase_over == False:
             transitioning = True
         if bob.rect.colliderect(employment) == True and is_being_chased == True:
             end_chase = True
+        if chase_over == True:
+            if bob.rect.colliderect(dynamite) == True and inventory.has("Dynamite") == False:
+                inventory.add("Dynamite")
+            if bob.rect.colliderect(flint_and_steel) == True and inventory.has("Flint and steel") == False:
+                inventory.add("Flint and steel")
 
         # Falling transition
         if falling_locked == True:
@@ -2030,9 +2057,17 @@ def level_two():
                 other_miner_particles = create_disintegration(other_miner_art, other_miner.topleft)
                 other_miner_dead = True
 
-        if miner_dead == True and other_miner_dead == True:
+        if miner_dead == True and other_miner_dead == True and is_being_chased == True:
             is_being_chased = False
             darkness.fill((0, 0, 0))
+            pygame.mixer.music.stop()
+            yay_sfx.play()
+            checkpoint = {
+                "bob_pos": bob.rect.topleft,
+                "world_positions": [rect.topleft for rect in world_objects],
+                "cave_background_x": cave_background_x
+            }
+            chase_over = True
 
         #Easter eggs
         if current_area == CAVE and current_sub_area == CAVE_TOP:
@@ -2135,6 +2170,12 @@ def level_two():
                 screen.blit(pressed_button_art, rect.topleft)
             elif rect in not_pressed:
                 screen.blit(not_pressed_button_art, rect.topleft)
+        if chase_over == True:
+            if inventory.has("Dynamite") == False:
+                screen.blit(dynamite_art, dynamite.topleft)
+            if inventory.has("Flint and steel") == False:
+                screen.blit(flint_and_steel_art, flint_and_steel.topleft)
+            screen.blit(dynamite_outline_art, dynamite_outline.topleft)
         for spike in spikes:
             if spike.flipped == True:
                 screen.blit(pygame.transform.flip(spike_art, False, True), spike.image_rect.topleft)
