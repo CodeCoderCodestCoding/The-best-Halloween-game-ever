@@ -628,13 +628,13 @@ class Spike:
             [(100, 0), (100, 100), (0, 100)]
         )
 
-        self.rect = pygame.Rect(33 + x, 62 + y, 34, 46)
+        self.rect = pygame.Rect(33 + x, 47 + y, 34, 46)
         self.image_rect = self.surface.get_rect(topleft=(x, y))
         self.mask = pygame.mask.from_surface(self.surface)
 
         if flipped == True:
             self.surface = pygame.transform.flip(self.surface, False, True)
-            self.rect.y = -8 + y
+            self.rect.y = 7 + y
 
 #Death animation
 class DisintegrationParticle:
@@ -1661,7 +1661,14 @@ def level_two():
         pygame.Rect(9800, 850, 100, 100),
         pygame.Rect(10000, 1000, 100, 100),
         pygame.Rect(10400, 1000, 100, 100),
-        pygame.Rect(10800, 1000, 100, 100)
+        pygame.Rect(10800, 1000, 100, 100),
+        pygame.Rect(12200, 1000, 100, 100),
+        pygame.Rect(12400, 1000, 100, 100),
+        pygame.Rect(12600, 1000, 100, 100),
+        pygame.Rect(12800, 1000, 100, 100),
+        pygame.Rect(12800, 900, 100, 100),
+        pygame.Rect(12900, 900, 100, 100),
+        pygame.Rect(13000, 900, 100, 100)
     ]
     passable_gameplay = [
         pygame.Rect(1700, 400, 100, 20),
@@ -1728,7 +1735,7 @@ def level_two():
     cave_floor.extend(
         [
             pygame.Rect(100*k + 5800, 1100, 100, 100)
-            for k in range(60)
+            for k in range(100)
         ]
     )
     cave_ceiling = [
@@ -1738,7 +1745,7 @@ def level_two():
     cave_ceiling.extend(
         [
             pygame.Rect(100*k + 8800, 650, 100, 100)
-            for k in range(30)
+            for k in range(700)
         ]
     )
     cave_blocks = [
@@ -1786,7 +1793,12 @@ def level_two():
         Spike(9800, 950, True),
         Spike(10500, 1000, False),
         Spike(10600, 1000, False),
-        Spike (10700, 1000, False)
+        Spike(10700, 1000, False),
+        Spike(12200, 900, False),
+        Spike(12400, 900, False),
+        Spike(12600, 900, False),
+        Spike(12900, 750, True),
+        Spike(13000, 750, True)
     ]
     miner = pygame.Rect(11100, 1000, 100, 100)
     miner_vector = pygame.Vector2(miner.topleft)
@@ -1803,11 +1815,12 @@ def level_two():
     camera_lock = pygame.Rect(5790, 0, 10, 600)
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
     chase_transition_rect = pygame.Rect(11000, 600, 10, 600)
+    checkpoint_rect = pygame.Rect(12000, 1000, 100, 100)
 
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline, checkpoint_rect] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -2041,13 +2054,20 @@ def level_two():
                 wait_time = pygame.time.get_ticks()
         if bob.rect.colliderect(chase_transition_rect) == True and is_being_chased == False and chase_over == False:
             transitioning = True
-        if bob.rect.colliderect(employment) == True and is_being_chased == True:
+        if bob.rect.colliderect(employment) == True and is_being_chased == True and end_chase == False:
             end_chase = True
+            chase_ended = pygame.time.get_ticks()
         if chase_over == True:
             if bob.rect.colliderect(dynamite) == True and inventory.has("Dynamite") == False:
                 inventory.add("Dynamite")
             if bob.rect.colliderect(flint_and_steel) == True and inventory.has("Flint and steel") == False:
                 inventory.add("Flint and steel")
+        if bob.rect.colliderect(checkpoint_rect) == True:
+            checkpoint = {
+                "bob_pos": bob.rect.topleft,
+                "world_positions": [rect.topleft for rect in world_objects],
+                "cave_background_x": cave_background_x
+            }
 
         # Falling transition
         if falling_locked == True:
@@ -2164,17 +2184,17 @@ def level_two():
                 debris_particles.extend(
                     create_debris(cave_block_wall_art, rect.topleft)
                 )
-            for rect in cave_blocks_wall:
-                if rect in world_objects:
-                    world_objects.remove(rect)
-                if rect in collisions:
-                    collisions.remove(rect)
+            world_objects[:] = [
+                obj for obj in world_objects
+                if not any(obj is wall for wall in cave_blocks_wall)
+            ]
+            collisions[:] = [
+                obj for obj in world_objects
+                if not any(obj is wall for wall in cave_blocks_wall)
+            ]
             cave_blocks_wall.clear()
-            for rect in [dynamite, dynamite_outline]:
-                if rect in world_objects:
-                    world_objects.remove(rect)
-                if rect in collisions:
-                    collisions.remove(rect)
+            world_objects.remove(dynamite)
+            world_objects.remove(dynamite_outline)
             exploding = False
             exploded = True
 
@@ -2293,11 +2313,12 @@ def level_two():
             elif rect in not_pressed:
                 screen.blit(not_pressed_button_art, rect.topleft)
         if chase_over == True:
-            if inventory.has("Dynamite") == False:
-                screen.blit(dynamite_art, dynamite.topleft)
             if inventory.has("Flint and steel") == False:
                 screen.blit(flint_and_steel_art, flint_and_steel.topleft)
-            screen.blit(dynamite_outline_art, dynamite_outline.topleft)
+            if dynamite in world_objects and dynamite_outline in world_objects:
+                if inventory.has("Dynamite") == False:
+                    screen.blit(dynamite_art, dynamite.topleft)
+                screen.blit(dynamite_outline_art, dynamite_outline.topleft)
         for spike in spikes:
             if spike.flipped == True:
                 screen.blit(pygame.transform.flip(spike_art, False, True), spike.image_rect.topleft)
@@ -2324,15 +2345,13 @@ def level_two():
                 other_miner_vector = other_miner_vector.move_towards(target, 300 * dt)
                 other_miner.topleft = round(other_miner_vector.x), round(other_miner_vector.y)
 
-        if chase_ended is None:
-            chase_ended = pygame.time.get_ticks()
-        if end_chase == True:
-            screen.blit(update_text(f"Time: {(30000 + chase_timer - chase_ended) / 1000}", (255, 255, 255), -7)[0], update_text(f"Time: {(30000 + chase_timer - chase_ended) / 1000}", (255, 255, 255), -7)[1])
-            if 30000 + chase_timer - chase_ended >= 15000:
-                achievements["I wanna run away..."] = True
-                unlock_achievement(achievements)
-        else:
-            screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
+            if end_chase == True:
+                screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - chase_ended) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - chase_ended) / 1000}", (255, 255, 255), -7)[1])
+                if 30000 + chase_timer - chase_ended >= 15000:
+                    achievements["I wanna run away..."] = True
+                    unlock_achievement(achievements)
+            else:
+                screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
             screen.blit(employment_art, employment.topleft)
 
         draw_inventory()
@@ -2465,7 +2484,7 @@ def main_menu():
 
     #Objects
     main_play_button = pygame.Rect(300, 200, 200, 200)
-    achievements_button = pygame.Rect(50, 150, 100, 100)
+    achievements_button = pygame.Rect(650, 300, 100, 100)
     spinning_bob = pygame.Rect(100, 250, 100, 100)
     menu_ghost = pygame.Rect(-100, 450, 100, 100)
     menu_other_ghost = pygame.Rect(900, 450, 100, 100)
