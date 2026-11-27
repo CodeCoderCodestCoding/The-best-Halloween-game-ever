@@ -1668,7 +1668,9 @@ def level_two():
         pygame.Rect(12800, 1000, 100, 100),
         pygame.Rect(12800, 900, 100, 100),
         pygame.Rect(12900, 900, 100, 100),
-        pygame.Rect(13000, 900, 100, 100)
+        pygame.Rect(13000, 900, 100, 100),
+        pygame.Rect(13200, 900, 100, 100),
+        pygame.Rect(13300, 1000, 100, 100)
     ]
     passable_gameplay = [
         pygame.Rect(1700, 400, 100, 20),
@@ -1798,7 +1800,8 @@ def level_two():
         Spike(12400, 900, False),
         Spike(12600, 900, False),
         Spike(12900, 750, True),
-        Spike(13000, 750, True)
+        Spike(13000, 750, True),
+        Spike(13100, 1000, False)
     ]
     miner = pygame.Rect(11100, 1000, 100, 100)
     miner_vector = pygame.Vector2(miner.topleft)
@@ -1871,6 +1874,7 @@ def level_two():
     in_shock = False
     timer_three = 0
     is_being_chased = False
+    doom_is_impending = False
     chase_timer = 0
     end_chase = False
     miner_dead = False
@@ -1987,7 +1991,7 @@ def level_two():
         scroll_x = 0
         actual_scroll_x = 0
         if falling_locked == False and easter_egg_one_on == False:
-            if transitioning == False and game_paused == False:
+            if transitioning == False and game_paused == False and doom_is_impending == False:
                 if key[pygame.K_a] == True:
                     scroll_x = 420 * dt
                 if key[pygame.K_d] == True:
@@ -2228,6 +2232,8 @@ def level_two():
         #Checkpoints
         if any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or (bob.rect.colliderect(miner) == True and miner_dead == False) or (bob.rect.colliderect(other_miner) == True and other_miner_dead == False):
             if checkpoint is not None:
+                if pygame.mixer.music.get_busy() == True:
+                    pygame.mixer.music.play(start=4.5)
                 bob.rect.topleft = checkpoint["bob_pos"]
                 bob.rect.height = bob.normal_hitbox_height
                 bob.y = float(bob.rect.y)
@@ -2352,6 +2358,8 @@ def level_two():
                     unlock_achievement(achievements)
             else:
                 screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
+                if 30000 + chase_timer - pygame.time.get_ticks() <= 0:
+                    doom_is_impending = True
             screen.blit(employment_art, employment.topleft)
 
         draw_inventory()
