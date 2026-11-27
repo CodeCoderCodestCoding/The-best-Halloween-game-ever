@@ -49,13 +49,34 @@ def load_levels():
     if os.path.exists(LEVELS_UNLOCKED):
         try:
             with open(LEVELS_UNLOCKED, "r") as file:
-                return{**bootstrap_levels_unlocked, **json.load(file)}
+                return {**bootstrap_levels_unlocked, **json.load(file)}
         except(json.JSONDecodeError, OSError):
             pass
     return bootstrap_levels_unlocked.copy()
 def unlock_level(levels):
     with open(LEVELS_UNLOCKED, "w") as file:
         json.dump(levels, file, indent=4)
+
+#Achievements
+ACHIEVEMENTS = "achievements.json"
+bootstrap_achievements = {
+    "Beat Chapter 1": False,
+    "Beat Chapter 2": False,
+    "thechickenistasty": False,
+    "BOOOOOOOOOOOO...": False,
+    "I wanna run away...": False
+}
+def load_achievements():
+    if os.path.exists(ACHIEVEMENTS):
+        try:
+            with open(ACHIEVEMENTS, "r") as file:
+                return {**bootstrap_achievements, **json.load(file)}
+        except (json.JSONDecodeError, OSError):
+            pass
+    return bootstrap_achievements.copy()
+def unlock_achievement(achievements):
+    with open(ACHIEVEMENTS, "w") as file:
+        json.dump(achievements, file, indent=4)
         
 
 #Loading fonts and text objects
@@ -75,6 +96,12 @@ title_text_two_rect = title_text_two.get_rect(topleft = (200, 110))
 
 level_one_text = menu_font.render("Chapter One", False, (255, 255, 255))
 level_two_text = menu_font.render("Not Unlocked Yet", False, (255, 255, 255))
+
+achievement_one_text = menu_font.render("Beat Chapter 1", False, (255, 255, 255))
+achievement_two_text = menu_font.render("Beat Chapter 2", False, (255, 255, 255))
+achievement_three_text = menu_font.render("thechickenistasty", False, (255, 255, 255))
+achievement_four_text = menu_font.render("BOOOOOOOOOOOO...", False, (255, 255, 255))
+achievement_five_text = menu_font.render("I wanna run away...", False, (255, 255, 255))
 
 pause_menu_title = menu_font.render("The best Halloween game ever", False, (255, 255, 255))
 pause_menu_title_rect = pause_menu_title.get_rect(topleft = (100, 125))
@@ -271,6 +298,7 @@ original_play_button_art = main_play_button_art.copy()
 exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
 settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
 exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
+achievements_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Achievements button.png")
 cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
 cave_block_wall_art = cave_block_art.copy()
 upside_down_cave_block_art = pygame.transform.flip(cave_block_art, False, True)
@@ -1223,6 +1251,8 @@ def level_one():
             eaten = True
             can_eat = False
             eating_chicken = False
+            achievements["thechickenistasty"] = True
+            unlock_achievement(achievements)
 
         #Detects which key was pressed
         key = pygame.key.get_pressed()
@@ -1568,6 +1598,8 @@ def level_one():
                 time_since_completed = pygame.time.get_ticks()
                 time_since_completed_checked = True
             if pygame.time.get_ticks() - time_since_completed >= 3000:
+                achievements["Beat Chapter 1"] = True
+                unlock_achievement(achievements)
                 return
 
         #Refresh rate
@@ -1577,7 +1609,7 @@ def level_one():
 def level_two():
     global running, dt, transitioning
     global outside, outside_background_x, cave_background_x, miner_art
-    global settings, settings_open
+    global settings, settings_open, achievements
     global game_paused, inventory_open, inventory_surface, inventory_rect, current_sub_area
     global bob, Spike
 
@@ -1833,6 +1865,7 @@ def level_two():
     other_miner_dead = False
     other_miner_particles = []
     chase_over = False
+    chase_ended = None
     exploding = False
     exploded = False
     explosion_time = None
@@ -2169,6 +2202,8 @@ def level_two():
                     bob.on_ground = False
                     bob.velocity_y = 0
                     easter_egg_one_on = False
+                    achievements["BOOOOOOOOOOOO..."] = True
+                    unlock_achievement(achievements)
 
         #Checkpoints
         if any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or (bob.rect.colliderect(miner) == True and miner_dead == False) or (bob.rect.colliderect(other_miner) == True and other_miner_dead == False):
@@ -2288,7 +2323,15 @@ def level_two():
             if other_miner_dead == False:
                 other_miner_vector = other_miner_vector.move_towards(target, 300 * dt)
                 other_miner.topleft = round(other_miner_vector.x), round(other_miner_vector.y)
-            
+
+        if chase_ended is None:
+            chase_ended = pygame.time.get_ticks()
+        if end_chase == True:
+            screen.blit(update_text(f"Time: {(30000 + chase_timer - chase_ended) / 1000}", (255, 255, 255), -7)[0], update_text(f"Time: {(30000 + chase_timer - chase_ended) / 1000}", (255, 255, 255), -7)[1])
+            if 30000 + chase_timer - chase_ended >= 15000:
+                achievements["I wanna run away..."] = True
+                unlock_achievement(achievements)
+        else:
             screen.blit(update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[0], update_text(timer_font, f"Time: {(30000 + chase_timer - pygame.time.get_ticks() if chase_timer - pygame.time.get_ticks() >= -30000 else 0) / 1000}", (255, 255, 255), -7)[1])
             screen.blit(employment_art, employment.topleft)
 
@@ -2371,21 +2414,66 @@ def level_select(events):
         level_two_text = menu_font.render("Chapter Two", False, (255, 255, 255))
     screen.blit(level_two_text, (level_two_rect.topleft[0] + 10, level_two_rect.topleft[1] + 10))
 
+achievements_scroll = 0
+def achievements_menu(events):
+    global achievements_open, achievements_just_opened, achievements, achievements_scroll
+
+    achievements_menu = pygame.Surface((750, 550))
+    achievements_menu.set_alpha(223)
+    achievements_menu.fill((0, 0, 0))
+    achievements_rect = pygame.Rect(25, 25, 750, 550)
+    
+
+    for event in events:
+        if event.type == pygame.MOUSEWHEEL:
+            achievements_scroll -= event.y * 30
+
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button in [1, 2, 3]:
+            if achievements_just_opened == True:
+                achievements_just_opened = False
+            else:
+                achievements_open = False
+
+    achievements_scroll = max(0, min(achievements_scroll, 500))
+    achievement_rects = []
+    for k in range(10):
+        rect = pygame.Rect(30, 30 + 110*k - achievements_scroll, 690, 100)
+        achievement_rects.append(rect)
+        pygame.draw.rect(achievements_menu, (64, 64, 64), rect)
+
+    achievements_menu.blit(achievement_one_text, (achievement_rects[0].left + 10, achievement_rects[0].top + 10))
+    achievements_menu.blit(achievement_two_text, (achievement_rects[1].left + 10, achievement_rects[1].top + 10))
+    achievements_menu.blit(achievement_three_text, (achievement_rects[2].left + 10, achievement_rects[2].top + 10))
+    achievements_menu.blit(achievement_four_text, (achievement_rects[3].left + 10, achievement_rects[3].top + 10))
+    achievements_menu.blit(achievement_five_text, (achievement_rects[4].left + 10, achievement_rects[4].top + 10))
+    achievements_menu.blit(menu_font.render("Done" if achievements["Beat Chapter 1"] == True else "Not Done", False, (255, 255, 255)), (achievement_rects[0].left + 500, achievement_rects[0].top + 10))
+    achievements_menu.blit(menu_font.render("Done" if achievements["Beat Chapter 2"] == True else "Not Done", False, (255, 255, 255)), (achievement_rects[1].left + 500, achievement_rects[1].top + 10))
+    achievements_menu.blit(menu_font.render("Done" if achievements["thechickenistasty"] == True else "Not Done", False, (255, 255, 255)), (achievement_rects[2].left + 500, achievement_rects[2].top + 10))
+    achievements_menu.blit(menu_font.render("Done" if achievements["BOOOOOOOOOOOO..."] == True else "Not Done", False, (255, 255, 255)), (achievement_rects[3].left + 500, achievement_rects[3].top + 10))
+    achievements_menu.blit(menu_font.render("Done" if achievements["I wanna run away..."] == True else "Not Done", False, (255, 255, 255)), (achievement_rects[4].left + 500, achievement_rects[4].top + 10))
+    screen.blit(achievements_menu, achievements_rect.topleft)
+    pygame.draw.rect(screen, (255, 255, 255), achievements_rect, 3)
+
+
 def main_menu():
-    global running, dt, settings, levels_unlocked, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened, main_play_button_art
+    global running, dt, settings, levels_unlocked, achievements, hue_shift, spinning_bob_angle, level_select_open, level_menu_just_opened, main_play_button_art, achievements_open, achievements_just_opened
 
     #Loading stuff
     settings = load_settings()
     levels_unlocked = load_levels()
+    achievements = load_achievements()
 
     #Objects
     main_play_button = pygame.Rect(300, 200, 200, 200)
+    achievements_button = pygame.Rect(50, 150, 100, 100)
     spinning_bob = pygame.Rect(100, 250, 100, 100)
     menu_ghost = pygame.Rect(-100, 450, 100, 100)
     menu_other_ghost = pygame.Rect(900, 450, 100, 100)
 
     #Splash text
     chance = random.randint(1, 1000000000)
+
+    achievements_open = False
 
     #Ghost move
     def ghost_move():
@@ -2439,12 +2527,19 @@ def main_menu():
             if event.type == pygame.QUIT:
                 running = False
 
-            #If play button is pressed
+            #If button is pressed
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 cursor_pos = pygame.mouse.get_pos()
+
+                #If play button is pressed
                 if main_play_button.collidepoint(cursor_pos) == True and level_select_open == False:
                     level_select_open = True
                     level_menu_just_opened = True
+
+                #If achievements button is pressed
+                if achievements_button.collidepoint(cursor_pos) == True and achievements_open == False:
+                    achievements_open = True
+                    achievements_just_opened = True
 
         #Drawing artwork on screen
         hue_shift = (hue_shift + 0.2 * dt) % 1
@@ -2466,6 +2561,8 @@ def main_menu():
         scaled_button = pulsing(original_play_button_art)
         scaled_rect = scaled_button.get_rect(center=main_play_button.center)
         screen.blit(scaled_button, scaled_rect)
+
+        screen.blit(achievements_button_art, achievements_button.topleft)
 
         if chance == 1000000000:
             screen.blit(update_text(splash_text_font, "If you are reading this", (255, 255, 255), 0)[0], update_text(splash_text_font, "If you are reading this", (255, 255, 255), 0)[1])
@@ -2489,6 +2586,9 @@ def main_menu():
 
         if level_select_open == True:
             level_select(events)
+
+        if achievements_open == True:
+            achievements_menu(events)
 
         pygame.display.flip()
 
