@@ -318,6 +318,7 @@ dynamite_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dynamite.png")
 dynamite_outline_art = dynamite_art.copy()
 dynamite_outline_art.set_alpha(64)
 flint_and_steel_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Flint and steel.png") #Design borrowed from Minecraft
+pumpking_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Pumpking.png")
 pygame.display.set_icon(ghost_art)
 
 #Loading player models and other things that look like the player
@@ -1812,6 +1813,7 @@ def level_two():
     dynamite = pygame.Rect(5900, 1000, 100, 100)
     dynamite_outline = pygame.Rect(11500, 1000, 100, 100)
     flint_and_steel = pygame.Rect(9800, 750, 100, 100)
+    pumpking = pygame.Rect(13500, 1000, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
@@ -1823,7 +1825,7 @@ def level_two():
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline, checkpoint_rect] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline, checkpoint_rect, pumpking] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -2330,6 +2332,7 @@ def level_two():
                 screen.blit(pygame.transform.flip(spike_art, False, True), spike.image_rect.topleft)
             else:
                 screen.blit(spike_art, spike.image_rect.topleft)
+        screen.blit(pumpking_art, pumpking.topleft)
 
         #Drawing rain
         if current_area == OUTSIDE:
@@ -2403,12 +2406,11 @@ def level_two():
 def level_select(events):
     global level_select_open, level_menu_just_opened, levels_unlocked, level_two_text
 
-    level_menu = pygame.Surface((750, 550))
-    level_menu.set_alpha(223)
-    level_menu.fill((0, 0, 0))
+    level_menu = pygame.Surface((750, 550), pygame.SRCALPHA)
+    level_menu.fill((0, 0, 0, 223))
     level_menu_rect = pygame.Rect(25, 25, 750, 550)
-    level_one_rect = pygame.Rect(55, 55, 690, 100)
-    level_two_rect = pygame.Rect(55, 165, 690, 100)
+    level_one_rect = pygame.Rect(30, 30, 690, 100)
+    level_two_rect = pygame.Rect(30, 140, 690, 100)
 
     for event in events:
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -2432,22 +2434,21 @@ def level_select(events):
             else:
                 level_menu_just_opened = False
     
-    screen.blit(level_menu, level_menu_rect.topleft)
-    pygame.draw.rect(screen, (255, 255, 255), level_menu_rect, 3)
-    pygame.draw.rect(screen, (64, 64, 64), level_one_rect)
-    screen.blit(level_one_text, (level_one_rect.topleft[0] + 10, level_one_rect.topleft[1] + 10))
-    pygame.draw.rect(screen, (64, 64, 64), level_two_rect)
+    pygame.draw.rect(level_menu, (64, 64, 64), level_one_rect)
+    pygame.draw.rect(level_menu, (64, 64, 64), level_two_rect)
+    level_menu.blit(level_one_text, (level_one_rect.topleft[0] + 10, level_one_rect.topleft[1] + 10))
     if levels_unlocked["Chapter 2"] == True:
         level_two_text = menu_font.render("Chapter Two", False, (255, 255, 255))
-    screen.blit(level_two_text, (level_two_rect.topleft[0] + 10, level_two_rect.topleft[1] + 10))
+    level_menu.blit(level_two_text, (level_two_rect.topleft[0] + 10, level_two_rect.topleft[1] + 10))
+    screen.blit(level_menu, level_menu_rect.topleft)
+    pygame.draw.rect(screen, (255, 255, 255), level_menu_rect, 3)
 
 achievements_scroll = 0
 def achievements_menu(events):
     global achievements_open, achievements_just_opened, achievements, achievements_scroll
 
-    achievements_menu = pygame.Surface((750, 550))
-    achievements_menu.set_alpha(223)
-    achievements_menu.fill((0, 0, 0))
+    achievements_menu = pygame.Surface((750, 550), pygame.SRCALPHA)
+    achievements_menu.fill((0, 0, 0, 223))
     achievements_rect = pygame.Rect(25, 25, 750, 550)
     
 
