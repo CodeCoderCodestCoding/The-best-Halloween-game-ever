@@ -308,9 +308,9 @@ cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
 cave_front_extra_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front extra.png")
 spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
 miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
-miner_art.set_alpha(200)
+miner_art.set_alpha(128)
 other_miner_art = pygame.transform.flip(miner_art, True, False)
-other_miner_art.set_alpha(200)
+other_miner_art.set_alpha(128)
 exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
 employment_art = load_art(ASSETS_DIR / "Art" / "Objects" / "EMPLOYMENT.png")
 employment_art = pygame.transform.rotate(employment_art, 90)
@@ -328,7 +328,6 @@ spinning_bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
 spinning_bob_angle = 0
 
 #Music
-pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Main menu music.mp3")
 jump_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Jump.mp3")
 landing_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing.mp3")
 raining_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Raining.mp3")
@@ -731,6 +730,8 @@ def level_one():
     global outside, rotated_not_pressed_button_art, breaker_box_off, outside_background_x
     global settings, new_fps, levels_unlocked
     global current_area, inventory_open, inventory_surface, inventory_rect
+
+    outside = load_background(ASSETS_DIR / "Art" / "Backgrounds" / "Outside.png", screen_size)
 
     #Objects
     darkness = pygame.Surface((800, 600))
@@ -1601,6 +1602,8 @@ def level_one():
             if pygame.time.get_ticks() - time_since_completed >= 3000:
                 achievements["Beat Chapter 1"] = True
                 unlock_achievement(achievements)
+                pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Main menu music.mp3")
+                pygame.mixer.music.play(-1)
                 return
 
         #Refresh rate
@@ -1613,6 +1616,9 @@ def level_two():
     global settings, settings_open, achievements
     global game_paused, inventory_open, inventory_surface, inventory_rect, current_sub_area
     global bob, Spike
+    
+    miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
+    miner_art.set_alpha(128)
 
     #Functions
     def bobbing(rect, start_y, end_y, speed, direction):
@@ -1671,7 +1677,11 @@ def level_two():
         pygame.Rect(12900, 900, 100, 100),
         pygame.Rect(13000, 900, 100, 100),
         pygame.Rect(13200, 900, 100, 100),
-        pygame.Rect(13300, 1000, 100, 100)
+        pygame.Rect(13300, 1000, 100, 100),
+        pygame.Rect(13900, 750, 50, 50),
+        pygame.Rect(13950, 750, 50, 50),
+        pygame.Rect(14100, 750, 50, 50),
+        pygame.Rect(14150, 750, 50, 50)
     ]
     passable_gameplay = [
         pygame.Rect(1700, 400, 100, 20),
@@ -1802,7 +1812,13 @@ def level_two():
         Spike(12600, 900, False),
         Spike(12900, 750, True),
         Spike(13000, 750, True),
-        Spike(13100, 1000, False)
+        Spike(13100, 1000, False),
+        Spike(13500, 1000, False),
+        Spike(13550, 1000, False),
+        Spike(13900, 1000, False),
+        Spike(13900, 800, True),
+        Spike(14100, 1000, False),
+        Spike(14100, 800, True)
     ]
     miner = pygame.Rect(11100, 1000, 100, 100)
     miner_vector = pygame.Vector2(miner.topleft)
@@ -1813,7 +1829,7 @@ def level_two():
     dynamite = pygame.Rect(5900, 1000, 100, 100)
     dynamite_outline = pygame.Rect(11500, 1000, 100, 100)
     flint_and_steel = pygame.Rect(9800, 750, 100, 100)
-    pumpking = pygame.Rect(13500, 1000, 100, 100)
+    pumpking = pygame.Rect(14500, 1000, 100, 100)
 
     transition_rect = pygame.Rect(3600, 0, 10, 600)
     area_change_rect = pygame.Rect(4175, 0, 10, 600)
@@ -1821,11 +1837,12 @@ def level_two():
     falling_lock_rect = pygame.Rect(5800, 600, 400, 10)
     chase_transition_rect = pygame.Rect(11000, 600, 10, 600)
     checkpoint_rect = pygame.Rect(12000, 1000, 100, 100)
+    end_level_rect = pygame.Rect(14300, 600, 10, 600)
 
     easter_egg_one = pygame.Rect(1000, 360, 70, 90)
 
     #Entire world
-    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline, checkpoint_rect, pumpking] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
+    world_objects = (gameplay + passable_gameplay + buttons + cave_front + cave_front_extra + cave_floor + cave_ceiling + cave_blocks + cave_ceiling_blocks + cave_blocks_wall + [transition_rect, camera_lock, falling_lock_rect, area_change_rect, miner, other_miner, chase_transition_rect, exclamation_mark, employment, dynamite, flint_and_steel, dynamite_outline, checkpoint_rect, pumpking, end_level_rect] + [spike.rect for spike in spikes] + [spike.image_rect for spike in spikes])
 
     #Rain and Lightning
     rain = []
@@ -1889,6 +1906,11 @@ def level_two():
     exploded = False
     explosion_time = None
     debris_particles = []
+    ending_level = False
+    move_pumpking = 0
+    move_bob = 0
+    level_done = False
+    time_since_complete = 0
 
     easter_egg_one_on = False
     easter_egg_one_finished = False
@@ -1993,7 +2015,7 @@ def level_two():
         scroll_x = 0
         actual_scroll_x = 0
         if falling_locked == False and easter_egg_one_on == False:
-            if transitioning == False and game_paused == False and doom_is_impending == False:
+            if transitioning == False and game_paused == False and doom_is_impending == False and ending_level == False:
                 if key[pygame.K_a] == True:
                     scroll_x = 420 * dt
                 if key[pygame.K_d] == True:
@@ -2074,6 +2096,12 @@ def level_two():
                 "world_positions": [rect.topleft for rect in world_objects],
                 "cave_background_x": cave_background_x
             }
+        if bob.rect.colliderect(end_level_rect) == True and level_done == False:
+            level_done = True
+            ending_level = True
+            move_pumpking = pygame.time.get_ticks()
+            move_bob = pygame.time.get_ticks()
+            time_since_complete = pygame.time.get_ticks()
 
         # Falling transition
         if falling_locked == True:
@@ -2401,6 +2429,23 @@ def level_two():
             new_fps_text = small_menu_font.render(new_fps, False, (255, 255, 255))
             screen.blit(new_fps_text, (settings_entries[0].x + 5, settings_entries[0].y + 5))
 
+        if level_done == True:
+            pygame.mixer.music.stop()
+            pygame.mixer.Channel.stop(walking_channel)
+            pygame.mixer.Channel.stop(raining_channel)
+            if pygame.time.get_ticks() - move_pumpking >= 2000:
+                pumpking.move_ip(420 * dt, 0)
+                if pygame.time.get_ticks() - move_bob >= 1000:
+                    bob.rect.move_ip(420 * dt, 0)
+                    alpha_fade(darkness, darkness.get_alpha(), 255, 240)
+                    screen.blit(level_complete, level_complete_rect)
+                    if pygame.time.get_ticks() - time_since_complete >= 3000:
+                        achievements["Beat Chapter 2"] = True
+                        unlock_achievement(achievements)
+                        pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Main menu music.mp3")
+                        pygame.mixer.music.play(-1)
+                        return
+
         pygame.display.flip()
 
 def level_select(events):
@@ -2419,15 +2464,11 @@ def level_select(events):
                 if level_one_rect.collidepoint(cursor_pos) == True:
                     pygame.mixer.music.stop()
                     level_one()
-                    if running:
-                        pygame.mixer.music.play(-1)
                     return
                 elif level_two_rect.collidepoint(cursor_pos) == True:
                     if levels_unlocked["Chapter 2"] == True:
                         pygame.mixer.music.stop()
                         level_two()
-                        if running:
-                            pygame.mixer.music.play(-1)
                         return
                 else:
                     level_select_open = False
@@ -2536,8 +2577,8 @@ def main_menu():
         return pygame.transform.scale(surface, new_size)
         
     #Music
-    if pygame.mixer.music.get_busy() == False:
-        pygame.mixer.music.play(-1)
+    pygame.mixer.music.load(ASSETS_DIR / "Music" / "Songs" / "Main menu music.mp3")
+    pygame.mixer.music.play(-1)
 
     #Main loop
     while running == True:
