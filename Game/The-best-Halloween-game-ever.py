@@ -249,77 +249,93 @@ def load_art(art):
         sys.exit()
 
 #Loading art
+#General art
 crate = load_art(ASSETS_DIR / "Art" / "Objects" / "Crate.png")
-small_crate = load_art(ASSETS_DIR / "Art" / "Objects" / "Small crate.png")
+ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
+menu_ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
 not_pressed_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Button (not pressed).png")
-rotated_not_pressed_button_art = pygame.transform.rotate(not_pressed_button_art, 90)
-pressed_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Button (pressed).png")
-rotated_pressed_button_art = pygame.transform.rotate(pressed_button_art, 90)
 passable_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Passable crate.png")
+pressed_button_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Button (pressed).png")
+small_crate = load_art(ASSETS_DIR / "Art" / "Objects" / "Small crate.png")
+
+menu_other_ghost_art = pygame.transform.flip(menu_ghost_art, True, False)
+other_ghost_art = pygame.transform.flip(ghost_art, True, False)
+rotated_not_pressed_button_art = pygame.transform.rotate(not_pressed_button_art, 90)
+rotated_pressed_button_art = pygame.transform.rotate(pressed_button_art, 90)
+
+#Chapter One art
 balcony_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Balcony.png")
-door_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Door.png")
-fireplace_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace closed.png")
-fireplace_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace open.png")
-fireplace_with_coal_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace with coal.png")
-fireplace_lit_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace lit.png")
-fireplace_chimney_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace chimney.png")
-chair_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Chair.png")
-other_chair_art = pygame.transform.flip(chair_art, True, False)
-floorboard_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Floorboard.png")
-dining_table_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dining table.png")
-stove_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove closed.png")
-stove_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove open.png")
-stove_cooking_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove cooking.png")
-raw_chicken_on_tray_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Raw chicken on tray.png")
-raw_chicken_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Raw chicken.png")
-cooked_chicken_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cooked chicken.png")
-cupboard_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard closed.png")
-cupboard_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard open.png")
-elevator_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Elevator.png")
-breaker_box_off = load_art(ASSETS_DIR / "Art" / "Objects" / "Breaker box off.png")
-breaker_box_on = load_art(ASSETS_DIR / "Art" / "Objects" / "Breaker box on.png")
-cobblestone_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cobblestone.png")
-light_bulb_off = load_art(ASSETS_DIR / "Art" / "Objects" / "Light bulb off.png")
-light_bulb_on = load_art(ASSETS_DIR / "Art" / "Objects" / "Light bulb on.png")
-coal_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Lump of coal.png")
-lighter_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Lighter.png")
 bed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Bed.png")
 blarghs_bed = load_art(ASSETS_DIR / "Art" / "Objects" / "Blargh bed.png")
 blargh_art = load_art(ASSETS_DIR / "Art" / "Objects" / "BLARGH.png")
-blargh_art = pygame.transform.flip(blargh_art, True, False)
+breaker_box_off = load_art(ASSETS_DIR / "Art" / "Objects" / "Breaker box off.png")
+breaker_box_on = load_art(ASSETS_DIR / "Art" / "Objects" / "Breaker box on.png")
+chair_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Chair.png")
+coal_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Lump of coal.png")
+cobblestone_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cobblestone.png")
+cooked_chicken_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cooked chicken.png")
+cupboard_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard closed.png")
+cupboard_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cupboard open.png")
+dining_table_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dining table.png")
+door_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Door.png")
+elevator_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Elevator.png")
+fireplace_chimney_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace chimney.png")
+fireplace_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace closed.png")
+fireplace_lit_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace lit.png")
+fireplace_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace open.png")
+fireplace_with_coal_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Fireplace with coal.png")
+floorboard_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Floorboard.png")
+light_bulb_off = load_art(ASSETS_DIR / "Art" / "Objects" / "Light bulb off.png")
+light_bulb_on = load_art(ASSETS_DIR / "Art" / "Objects" / "Light bulb on.png")
+lighter_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Lighter.png")
+raw_chicken_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Raw chicken.png")
+raw_chicken_on_tray_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Raw chicken on tray.png")
+stove_closed_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove closed.png")
+stove_cooking_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove cooking.png")
+stove_open_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Stove open.png")
 tome_art = load_art(ASSETS_DIR / "Art" / "Objects" / "The tome.png")
-ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
-menu_ghost_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Ghost.png")
-other_ghost_art = pygame.transform.flip(ghost_art, True, False)
-menu_other_ghost_art = pygame.transform.flip(menu_ghost_art, True, False)
-play_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Play button.png")
-main_play_button_art = pygame.transform.scale(play_button_art, (200, 200))
-original_play_button_art = main_play_button_art.copy()
-exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
-settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
-exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
-achievements_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Achievements button.png")
+
+#Transforms
+blargh_art = pygame.transform.flip(blargh_art, True, False)
+other_chair_art = pygame.transform.flip(chair_art, True, False)
+
+#Chapter Two art
 cave_block_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave block.png")
 cave_block_wall_art = cave_block_art.copy()
-upside_down_cave_block_art = pygame.transform.flip(cave_block_art, False, True)
 cave_floor_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave floor.png")
-cave_ceiling_art = pygame.transform.flip(cave_floor_art, False, True)
 cave_front_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front.png")
 cave_front_extra_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Cave front extra.png")
-spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
-miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
-miner_art.set_alpha(128)
-other_miner_art = pygame.transform.flip(miner_art, True, False)
-other_miner_art.set_alpha(128)
-exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
-employment_art = load_art(ASSETS_DIR / "Art" / "Objects" / "EMPLOYMENT.png")
-employment_art = pygame.transform.rotate(employment_art, 90)
 dynamite_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Dynamite.png")
 dynamite_outline_art = dynamite_art.copy()
 dynamite_outline_art.set_alpha(64)
+employment_art = load_art(ASSETS_DIR / "Art" / "Objects" / "EMPLOYMENT.png")
+employment_art = pygame.transform.rotate(employment_art, 90)
+exclamation_mark_art = load_art(ASSETS_DIR / "Art" / "Objects" / "!.png")
 flint_and_steel_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Flint and steel.png") #Design borrowed from Minecraft
+miner_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Miner.png")
+miner_art.set_alpha(128)
 pumpking_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Pumpking.png")
+spike_art = load_art(ASSETS_DIR / "Art" / "Objects" / "Spike.png")
+
+#Transforms
+cave_ceiling_art = pygame.transform.flip(cave_floor_art, False, True)
+other_miner_art = pygame.transform.flip(miner_art, True, False)
+other_miner_art.set_alpha(128)
+upside_down_cave_block_art = pygame.transform.flip(cave_block_art, False, True)
+
+#Game icon
 pygame.display.set_icon(ghost_art)
+
+#Menu art
+achievements_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Achievements button.png")
+exit_settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit settings button.png")
+exit_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Exit button.png")
+play_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Play button.png")
+settings_button_art = load_art(ASSETS_DIR / "Art" / "Menu stuff" / "Settings button.png")
+
+#Transforms
+main_play_button_art = pygame.transform.scale(play_button_art, (200, 200))
+original_play_button_art = main_play_button_art.copy()
 
 #Loading player models and other things that look like the player
 bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png") 
@@ -327,32 +343,34 @@ crouching_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB_crouch.png")
 spinning_bob_art = load_art(ASSETS_DIR / "Art" / "BOB" / "BOB.png")
 spinning_bob_angle = 0
 
-#Music
-jump_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Jump.mp3")
-landing_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing.mp3")
-raining_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Raining.mp3")
-raining_channel = pygame.mixer.Channel(2)
-click_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Button clicked.mp3")
-thunder_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Thunder.mp3")
+#Loading SFX
 balcony_creaking_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Balcony creaking.mp3")
-creaking_channel = pygame.mixer.Channel(1)
-walking_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on grass.mp3")
-landing_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing on grass.mp3")
-walking_wood_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on wood.mp3")
-walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on stone.mp3")
-walking_channel = pygame.mixer.Channel(4)
-fire_crackling_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire crackling.mp3")
-fire_crackling_channel = pygame.mixer.Channel(5)
-ready_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Ready!.mp3")
-nomnomnom_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Nom nom nom.mp3")
-fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
-electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
-electricity_channel = pygame.mixer.Channel(3)
+click_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Button clicked.mp3")
 easter_egg_one_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Easter egg one.mp3")
-running_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Running.mp3")
-yay_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Yay.mp3")
-hiss_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Hiss.mp3")
+electricity_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Static.mp3")
 explosion_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Explosion.mp3")
+fire_alarm_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire alarm.mp3")
+fire_crackling_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Fire crackling.mp3")
+hiss_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Hiss.mp3")
+jump_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Jump.mp3")
+landing_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing on grass.mp3")
+landing_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Landing.mp3")
+nomnomnom_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Nom nom nom.mp3")
+raining_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Raining.mp3")
+running_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Running.mp3")
+ready_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Ready!.mp3")
+thunder_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Thunder.mp3")
+walking_grass_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on grass.mp3")
+walking_stone_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on stone.mp3")
+walking_wood_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Walking on wood.mp3")
+yay_sfx = pygame.mixer.Sound(ASSETS_DIR / "Music" / "SFX" / "Yay.mp3")
+
+#Channels
+creaking_channel = pygame.mixer.Channel(1)
+raining_channel = pygame.mixer.Channel(2)
+electricity_channel = pygame.mixer.Channel(3)
+walking_channel = pygame.mixer.Channel(4)
+fire_crackling_channel = pygame.mixer.Channel(5)
 
 #Settings
 pause_menu = pygame.Surface((750, 550))
@@ -486,103 +504,6 @@ transitioning = False
 game_paused = False
 outside_background_x = 0
 cave_background_x = 0
-
-#BOB
-class BOB:
-    def __init__(self, x: int, y: int):
-        # Hitbox
-        self.rect = pygame.Rect(x, y, 75, 100)
-        self.normal_hitbox_height = 100
-        self.crouch_hitbox_height = 50
-
-        # Movement
-        self.velocity_y = 0
-        self.jump_speed = 900
-        self.gravity = 2880
-        self.on_ground = False
-        self.isCrouching = False
-        self.y = float(self.rect.y)
-
-        # Artwork
-        self.art = bob_art
-
-    def movement(self, dt, key, collisions, game_paused, current_area):
-
-        if game_paused == True:
-            return
-
-        # Crouching
-        crouch_request = (
-            key[pygame.K_s]
-            and self.on_ground
-            and self.velocity_y == 0
-        )
-
-        if crouch_request == True:
-            self.isCrouching = True
-        else:
-            standing_box = self.rect.copy()
-            standing_box.height = self.normal_hitbox_height
-            standing_box.bottom = self.rect.bottom
-            blocked_above = any(
-                standing_box.colliderect(rect)
-                for rect in collisions
-            )
-            if not blocked_above:
-                self.isCrouching = False
-        old_bottom = self.rect.bottom
-        if self.isCrouching:
-            self.rect.height = self.crouch_hitbox_height
-        else:
-            self.rect.height = self.normal_hitbox_height
-        self.rect.bottom = old_bottom
-        self.y = float(self.rect.y)
-
-        # Jumping
-        if key[pygame.K_w] == True and self.on_ground == True and self.isCrouching == False :
-            self.velocity_y = -self.jump_speed
-            self.on_ground = False
-            jump_sfx.play()
-
-        # Gravity
-        previous = self.rect.copy()
-        self.velocity_y += self.gravity * dt
-        self.y += self.velocity_y * dt
-        self.rect.y = round(self.y)
-        was_on_ground = self.on_ground
-        self.on_ground = False
-        for rect in collisions:
-            if self.rect.colliderect(rect) == False:
-                continue
-            if self.velocity_y >= 0 and previous.bottom <= rect.top:
-                self.rect.bottom = rect.top
-                self.y = float(self.rect.y)
-                self.velocity_y = 0
-                self.on_ground = True
-            elif self.velocity_y < 0 and previous.top >= rect.bottom:
-                self.rect.top = rect.bottom
-                self.y = float(self.rect.y)
-                self.velocity_y = 0
-
-        #Floor collision
-        if self.rect.bottom >= screen_size[1] - 100 and current_area == OUTSIDE:
-            self.rect.bottom = screen_size[1] - 100
-            self.y = float(self.rect.y)
-            self.velocity_y = 0
-            self.on_ground = True
-
-        # Landing
-        if self.on_ground == True and was_on_ground == False and previous.bottom < self.rect.bottom:
-            landing_sfx.play()
-
-    def draw(self, screen):
-        if self.isCrouching == True:
-            self.art = crouching_art
-        else:
-            self.art = bob_art
-        art_x = self.rect.centerx - self.art.get_width() // 2
-        art_y = self.rect.bottom - self.art.get_height()
-        screen.blit(self.art, (art_x, art_y))
 
 #Inventory
 class Inventory:
@@ -724,6 +645,103 @@ def create_debris(image, position, pixel_size=4):
                 )
             )
     return particles
+
+#BOB
+class BOB:
+    def __init__(self, x: int, y: int):
+        # Hitbox
+        self.rect = pygame.Rect(x, y, 75, 100)
+        self.normal_hitbox_height = 100
+        self.crouch_hitbox_height = 50
+
+        # Movement
+        self.velocity_y = 0
+        self.jump_speed = 900
+        self.gravity = 2880
+        self.on_ground = False
+        self.isCrouching = False
+        self.y = float(self.rect.y)
+
+        # Artwork
+        self.art = bob_art
+
+    def movement(self, dt, key, collisions, game_paused, current_area):
+
+        if game_paused == True:
+            return
+
+        # Crouching
+        crouch_request = (
+            key[pygame.K_s]
+            and self.on_ground
+            and self.velocity_y == 0
+        )
+
+        if crouch_request == True:
+            self.isCrouching = True
+        else:
+            standing_box = self.rect.copy()
+            standing_box.height = self.normal_hitbox_height
+            standing_box.bottom = self.rect.bottom
+            blocked_above = any(
+                standing_box.colliderect(rect)
+                for rect in collisions
+            )
+            if not blocked_above:
+                self.isCrouching = False
+        old_bottom = self.rect.bottom
+        if self.isCrouching:
+            self.rect.height = self.crouch_hitbox_height
+        else:
+            self.rect.height = self.normal_hitbox_height
+        self.rect.bottom = old_bottom
+        self.y = float(self.rect.y)
+
+        # Jumping
+        if key[pygame.K_w] == True and self.on_ground == True and self.isCrouching == False :
+            self.velocity_y = -self.jump_speed
+            self.on_ground = False
+            jump_sfx.play()
+
+        # Gravity
+        previous = self.rect.copy()
+        self.velocity_y += self.gravity * dt
+        self.y += self.velocity_y * dt
+        self.rect.y = round(self.y)
+        was_on_ground = self.on_ground
+        self.on_ground = False
+        for rect in collisions:
+            if self.rect.colliderect(rect) == False:
+                continue
+            if self.velocity_y >= 0 and previous.bottom <= rect.top:
+                self.rect.bottom = rect.top
+                self.y = float(self.rect.y)
+                self.velocity_y = 0
+                self.on_ground = True
+            elif self.velocity_y < 0 and previous.top >= rect.bottom:
+                self.rect.top = rect.bottom
+                self.y = float(self.rect.y)
+                self.velocity_y = 0
+
+        #Floor collision
+        if self.rect.bottom >= screen_size[1] - 100 and current_area == OUTSIDE:
+            self.rect.bottom = screen_size[1] - 100
+            self.y = float(self.rect.y)
+            self.velocity_y = 0
+            self.on_ground = True
+
+        # Landing
+        if self.on_ground == True and was_on_ground == False and previous.bottom < self.rect.bottom:
+            landing_sfx.play()
+
+    def draw(self, screen):
+        if self.isCrouching == True:
+            self.art = crouching_art
+        else:
+            self.art = bob_art
+        art_x = self.rect.centerx - self.art.get_width() // 2
+        art_y = self.rect.bottom - self.art.get_height()
+        screen.blit(self.art, (art_x, art_y))
 
 def level_one():
     global running, dt, raining_channel
@@ -1886,6 +1904,8 @@ def level_two():
     falling_locked = False
     falling_phase = 0
     falling_fade_speed = 240
+    bob_dying = False
+    bob_particles = []
     miner_direction, other_miner_direction = -1, -1
     transition_stage = 0
     timer_one = 0
@@ -1998,7 +2018,8 @@ def level_two():
         collisions.extend(gameplay + passable_gameplay + cave_floor + cave_ceiling + cave_blocks + cave_blocks_wall)
         if cave_front_has_hitox == True:
             collisions.extend(cave_front)
-        bob.movement(dt, key, collisions, game_paused, current_area)
+        if bob_dying == False:
+            bob.movement(dt, key, collisions, game_paused, current_area)
 
         if easter_egg_bob_moving == True:
             current_time = pygame.time.get_ticks() / 1000
@@ -2014,7 +2035,7 @@ def level_two():
         #Movement
         scroll_x = 0
         actual_scroll_x = 0
-        if falling_locked == False and easter_egg_one_on == False:
+        if falling_locked == False and easter_egg_one_on == False and bob_dying == False:
             if transitioning == False and game_paused == False and doom_is_impending == False and ending_level == False:
                 if key[pygame.K_a] == True:
                     scroll_x = 420 * dt
@@ -2259,8 +2280,32 @@ def level_two():
                     achievements["BOOOOOOOOOOOO..."] = True
                     unlock_achievement(achievements)
 
-        #Checkpoints
-        if any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or (bob.rect.colliderect(miner) == True and miner_dead == False) or (bob.rect.colliderect(other_miner) == True and other_miner_dead == False):
+        #Death detection
+        if (any(bob.rect.colliderect(spike.rect) == True for spike in spikes) or (bob.rect.colliderect(miner) == True and miner_dead == False) or (bob.rect.colliderect(other_miner) == True and other_miner_dead == False)) and bob_dying == False:
+            bob_particles = create_disintegration(bob_art, bob.rect.topleft)
+            bob_dying = True
+
+        #Drawing screen
+        outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
+        if transitioning_into_cave == True:
+            cave_background_x = scroll_background(cave_bg, cave_background_x, actual_scroll_x)
+
+        #Drawing BOB
+        if bob_dying == False:
+            bob.draw(screen)
+        else:
+            #Death animation
+            for particle in bob_particles:
+                particle.update(dt)
+                particle.draw(screen)
+
+            bob_particles = [
+                p for p in bob_particles
+                if p.age < p.lifetime
+            ]
+
+        #Respawn
+        if bob_dying == True and len(bob_particles) == 0:
             if checkpoint is not None:
                 if pygame.mixer.music.get_busy() == True:
                     pygame.mixer.music.play(start=4.5)
@@ -2278,14 +2323,7 @@ def level_two():
                 falling_phase = 0
                 miner_vector = pygame.Vector2(miner.topleft)
                 other_miner_vector = pygame.Vector2(other_miner.topleft)
-
-        #Drawing screen
-        outside_background_x = scroll_background(outside, outside_background_x, actual_scroll_x)
-        if transitioning_into_cave == True:
-            cave_background_x = scroll_background(cave_bg, cave_background_x, actual_scroll_x)
-
-        #Drawing BOB
-        bob.draw(screen)
+            bob_dying = False
 
         #Drawing objects
         for rect in cave_front:
